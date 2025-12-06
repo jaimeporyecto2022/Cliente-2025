@@ -77,9 +77,8 @@ public class LoginController {
                     datos[4],                                                         // rol
                     safeParseInt(datos[5]),                                           // idDepartamento → ahora seguro
                     datos[6],                                                         // nombreDepartamento
-                    safeParseInt(datos[7]),                                           // idJefe → ahora seguro
-                    LocalDate.parse(datos[8]),                                        // fechaAlta
-                    datos.length > 9 ? datos[9] : ""                                  // direccion
+                    LocalDate.parse(datos[7]),                                        // fechaAlta
+                    datos.length > 9 ? datos[8] : ""                                  // direccion
             );
 
             // Guardamos en Main (accesible desde cualquier parte del cliente)

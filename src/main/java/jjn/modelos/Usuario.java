@@ -22,14 +22,13 @@ public class Usuario {
     // Constructor completo (el que usarás al hacer login)
     public Usuario(int id, String nombre, String mail, String rol,
                    Integer idDepartamento, String nombreDepartamento,
-                   Integer idJefe, LocalDate fechaAlta, String direccion) {
+                   LocalDate fechaAlta, String direccion) {
         this.id = id;
         this.nombre = nombre;
         this.mail = mail;
         this.rol = rol;
         this.idDepartamento = idDepartamento != null ? idDepartamento : 0;
         this.nombreDepartamento = nombreDepartamento != null ? nombreDepartamento : "Sin departamento";
-        this.idJefe = idJefe;
         this.fechaAlta = fechaAlta;
         this.direccion = direccion != null ? direccion : "";
     }
