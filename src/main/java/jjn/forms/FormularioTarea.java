@@ -10,6 +10,7 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import jjn.Main;
 import jjn.modelos.Tarea;
+import jjn.modelos.Usuario;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public class FormularioTarea {
     // UI
     private TextField txtTitulo;
     private TextArea txtDescripcion;
-    private ComboBox<UsuarioItem> cbUsuarios;
+    private ComboBox<Usuario> cbUsuarios;     // <-- AHORA USA Usuario
     private DatePicker dpInicio;
     private DatePicker dpFin;
     private ComboBox<String> cbEstado;
@@ -50,7 +51,7 @@ public class FormularioTarea {
         txtDescripcion.setPromptText("Descripción...");
         txtDescripcion.setPrefRowCount(4);
 
-        cbUsuarios = new ComboBox<UsuarioItem>();
+        cbUsuarios = new ComboBox<>();
         cbUsuarios.setPromptText("Asignar a...");
 
         dpInicio = new DatePicker();
@@ -105,7 +106,9 @@ public class FormularioTarea {
         cbEstado.setValue(tareaOriginal.getEstado());
     }
 
-
+    // ============================================================
+    // ========== CARGAR USUARIOS DESDE EL SERVIDOR ================
+    // ============================================================
     private void cargarUsuariosEnSegundoPlano() {
         new Thread(() -> {
             try {
@@ -119,10 +122,25 @@ public class FormularioTarea {
                 }
 
                 String resp = con.leerRespuestaCompleta();
-                System.out.println("entra en from t admin" +  resp);
-                List<UsuarioItem> lista = parseUsuarios(resp);
 
-                Platform.runLater(() -> cbUsuarios.getItems().setAll(lista));
+                System.out.println("📥 RESPUESTA SERVIDOR (usuarios):");
+                System.out.println(resp);
+
+                List<Usuario> lista = parseUsuarios(resp);
+
+                Platform.runLater(() -> {
+                    cbUsuarios.getItems().setAll(lista);
+
+                    // Si es update: seleccionar el usuario asignado actualmente
+                    if (esUpdate) {
+                        for (Usuario u : lista) {
+                            if (u.getId() == tareaOriginal.getIdAsignado()) {
+                                cbUsuarios.setValue(u);
+                                break;
+                            }
+                        }
+                    }
+                });
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -130,25 +148,49 @@ public class FormularioTarea {
         }).start();
     }
 
-    private List<UsuarioItem> parseUsuarios(String respuesta) {
-        List<UsuarioItem> lista = new ArrayList<>();
+    // ============================================================
+    // ========== PARSEAR RESPUESTA DE USUARIOS ====================
+    // ============================================================
+    private List<Usuario> parseUsuarios(String respuesta) {
+        List<Usuario> lista = new ArrayList<>();
+
+        if (respuesta == null || respuesta.isEmpty()) {
+            System.out.println("⚠ No llegaron usuarios");
+            return lista;
+        }
+
         String[] filas = respuesta.split(Main.JUMP);
 
         for (String f : filas) {
+            if (f.trim().isEmpty()) continue;
+
             String[] c = f.split(Main.SEP);
-            if (c.length >= 4) {
-                int id = Integer.parseInt(c[0]);
-                lista.add(new UsuarioItem(id, c[1]));
+
+            if (c.length >= 2) {
+                try {
+                    int id = Integer.parseInt(c[0]);
+                    String nombre = c[1];
+
+                    // Usuario con solo ID + Nombre (lo que envía el servidor)
+                    Usuario u = new Usuario();
+                    u.setId(id);
+                    u.setNombre(nombre);
+
+                    lista.add(u);
+
+                } catch (Exception ignored) {}
             }
         }
+
         return lista;
     }
-
-
+    // ============================================================
+    // ====================== GUARDAR ==============================
+    // ============================================================
     private void guardar() {
         String titulo = txtTitulo.getText().trim();
         String desc = txtDescripcion.getText().trim();
-        UsuarioItem usuario = cbUsuarios.getValue();
+        Usuario usuario = cbUsuarios.getValue();
         LocalDate inicio = dpInicio.getValue();
         LocalDate fin = dpFin.getValue();
         String estado = cbEstado.getValue();
@@ -169,14 +211,14 @@ public class FormularioTarea {
                     + Main.SEP + inicio
                     + Main.SEP + fin
                     + Main.SEP + estado
-                    + Main.SEP + usuario.id
+                    + Main.SEP + usuario.getId()
             );
         } else {
             con.enviar("INSERT_TAREA"
                     + Main.SEP + titulo
                     + Main.SEP + desc
                     + Main.SEP + creador.getId()
-                    + Main.SEP + usuario.id
+                    + Main.SEP + usuario.getId()
                     + Main.SEP + inicio
                     + Main.SEP + fin
                     + Main.SEP + estado
@@ -185,21 +227,5 @@ public class FormularioTarea {
 
         stage.close();
     }
-    private static class UsuarioItem {
-        int id;
-        String nombre;
-
-        public UsuarioItem(int id, String nombre) {
-            this.id = id;
-            this.nombre = nombre;
-        }
-
-        @Override
-        public String toString() {
-            return nombre;
-        }
-    }
-
-
 
 }

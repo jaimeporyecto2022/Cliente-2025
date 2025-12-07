@@ -237,12 +237,14 @@ public class TareasDashboard extends VBox {
                                 Integer.parseInt(campos[0]),                       // ID
                                 campos[1].isEmpty() ? "Sin título" : campos[1],   // Título
                                 campos[2],                                         // Descripción
-                                LocalDate.parse(campos[3]),                        // Creación
+                                "null".equals(campos[3]) ? null : LocalDate.parse(campos[3]),                        // Creación
                                 "null".equals(campos[4]) ? null : LocalDate.parse(campos[4]), // Inicio
                                 "null".equals(campos[5]) ? null : LocalDate.parse(campos[5]), // Fin
                                 campos[6],                                         // Estado
                                 campos[7],                                         // Creador
-                                campos[8]                                          // Asignado
+                                campos[8], //nombreasignado
+                                Integer.parseInt(campos[9])   //idasignado
+
                         );
 
                         Platform.runLater(() -> tareas.add(t));

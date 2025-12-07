@@ -13,10 +13,11 @@ public class Tarea {
     private String estado;
     private String nombreCreador;     // ← NUEVO
     private String nombreAsignado;    // ← NUEVO
+    private int idAsignado;
 
     public Tarea(int id, String titulo, String descripcion,
                  LocalDate fechaCreacion, LocalDate fechaInicio, LocalDate fechaFin,
-                 String estado, String nombreCreador, String nombreAsignado) {
+                 String estado, String nombreCreador, String nombreAsignado,int idAsignado) {
         this.id = id;
         this.titulo = titulo;
         this.descripcion = descripcion;
@@ -26,6 +27,7 @@ public class Tarea {
         this.estado = estado;
         this.nombreCreador = nombreCreador;
         this.nombreAsignado = nombreAsignado;
+        this.idAsignado = idAsignado;
     }
 
     // ==================== GETTERS ====================
@@ -45,5 +47,13 @@ public class Tarea {
     @Override
     public String toString() {
         return String.format("%s → %s (%s)", titulo, nombreAsignado, estado);
+    }
+
+    public int getIdAsignado() {
+        return idAsignado;
+    }
+
+    public void setIdAsignado(int idAsignado) {
+        this.idAsignado = idAsignado;
     }
 }
