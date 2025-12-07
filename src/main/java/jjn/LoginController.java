@@ -45,6 +45,7 @@ public class LoginController {
                 String respuesta = conexion.leerRespuestaCompleta();
 
                 Platform.runLater(() -> {
+                    System.out.println(respuesta+"esto");
                     if (respuesta.startsWith("LOGIN_OK")) {
                         crearUsuarioYEntrar(respuesta);
                     } else if (respuesta.startsWith("LOGIN_ERROR")) {

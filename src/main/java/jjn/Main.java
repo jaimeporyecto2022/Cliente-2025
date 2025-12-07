@@ -33,7 +33,7 @@ import javafx.stage.Stage;
                 conexion = null;
             }
             usuarioActual = null;
-            System.out.println("SESION CERRADA");
+            System.out.println("ESION CERRADA");
         }
         // ==================== INICIO DE LA APLICACIÓN ====================
         @Override

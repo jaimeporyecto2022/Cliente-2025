@@ -20,7 +20,7 @@ public class TareasTableView extends TableView<Tarea> {
 
         TableColumn<Tarea, String> colTitulo = new TableColumn<>("Título");
         colTitulo.setCellValueFactory(new PropertyValueFactory<>("titulo"));
-        colTitulo.setPrefWidth(300);
+        colTitulo.setPrefWidth(500);
         colTitulo.setCellFactory(tc -> new TableCell<>() {
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
