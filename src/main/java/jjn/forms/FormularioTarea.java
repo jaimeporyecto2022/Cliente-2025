@@ -8,6 +8,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import jjn.ConexionCliente;
 import jjn.Main;
 import jjn.modelos.Tarea;
 import jjn.modelos.Usuario;
@@ -15,7 +16,6 @@ import jjn.modelos.Usuario;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-
 public class FormularioTarea {
 
     private final Stage stage;
@@ -25,7 +25,7 @@ public class FormularioTarea {
     // UI
     private TextField txtTitulo;
     private TextArea txtDescripcion;
-    private ComboBox<Usuario> cbUsuarios;     // <-- AHORA USA Usuario
+    private ComboBox<Usuario> cbUsuarios;
     private DatePicker dpInicio;
     private DatePicker dpFin;
     private ComboBox<String> cbEstado;
@@ -50,6 +50,7 @@ public class FormularioTarea {
         txtDescripcion = new TextArea();
         txtDescripcion.setPromptText("Descripción...");
         txtDescripcion.setPrefRowCount(4);
+        txtDescripcion.setWrapText(true);
 
         cbUsuarios = new ComboBox<>();
         cbUsuarios.setPromptText("Asignar a...");
@@ -64,6 +65,8 @@ public class FormularioTarea {
         cbEstado.getItems().addAll("pendiente", "completado", "imposible");
         cbEstado.setPromptText("Estado");
 
+
+        // === CARGAR USUARIOS CON NUEVO MÉTODO SIMPLE ===
         cargarUsuariosEnSegundoPlano();
 
         // ===== BOTONES =====
@@ -76,22 +79,24 @@ public class FormularioTarea {
         HBox botones = new HBox(15, btnGuardar, btnCancelar);
         botones.setAlignment(Pos.CENTER_RIGHT);
 
-        // ===== AGREGAR AL LAYOUT =====
         root.getChildren().addAll(
                 new Label("Título:"), txtTitulo,
                 new Label("Descripción:"), txtDescripcion,
                 new Label("Asignar a:"), cbUsuarios,
+                new Label("Estado:"), cbEstado,
                 new Label("Fecha inicio:"), dpInicio,
                 new Label("Fecha fin:"), dpFin,
-                new Label("Estado:"), cbEstado,
                 botones
+        );
+        root.getStylesheets().add(
+                getClass().getResource("/css/formEstilo.css").toExternalForm()
         );
 
         if (esUpdate) {
             cargarDatosExistentes();
         }
 
-        stage.setScene(new Scene(root, 400, 600));
+        stage.setScene(new Scene(root, 600, 700));
     }
 
     public void mostrar() {
@@ -107,7 +112,7 @@ public class FormularioTarea {
     }
 
     // ============================================================
-    // ========== CARGAR USUARIOS DESDE EL SERVIDOR ================
+    // ========== CARGAR USUARIOS DESDE SERVIDOR ===================
     // ============================================================
     private void cargarUsuariosEnSegundoPlano() {
         new Thread(() -> {
@@ -115,23 +120,21 @@ public class FormularioTarea {
                 var con = Main.getConexion();
                 var user = Main.getUsuarioActual();
 
+                // === NUEVO USO DEL MÉTODO SIMPLE ===
                 if (user.getRol().equalsIgnoreCase("admin")) {
-                    con.enviar("TODOS_USUARIOS");
+                    con.enviar("USUARIOS_SIMPLE");System.out.println("entra en simple");
                 } else {
-                    con.enviar("USUARIOS_DEP" + Main.SEP + user.getIdDepartamento());
+                    con.enviar("USUARIOS_DEP_SIMPLE" + Main.SEP + user.getIdDepartamento());
                 }
 
                 String resp = con.leerRespuestaCompleta();
-
-                System.out.println("📥 RESPUESTA SERVIDOR (usuarios):");
-                System.out.println(resp);
+                System.out.println("respuestas"+ resp);
 
                 List<Usuario> lista = parseUsuarios(resp);
 
                 Platform.runLater(() -> {
                     cbUsuarios.getItems().setAll(lista);
 
-                    // Si es update: seleccionar el usuario asignado actualmente
                     if (esUpdate) {
                         for (Usuario u : lista) {
                             if (u.getId() == tareaOriginal.getIdAsignado()) {
@@ -168,13 +171,9 @@ public class FormularioTarea {
 
             if (c.length >= 2) {
                 try {
-                    int id = Integer.parseInt(c[0]);
-                    String nombre = c[1];
-
-                    // Usuario con solo ID + Nombre (lo que envía el servidor)
                     Usuario u = new Usuario();
-                    u.setId(id);
-                    u.setNombre(nombre);
+                    u.setId(Integer.parseInt(c[0]));
+                    u.setNombre(c[1]);
 
                     lista.add(u);
 
@@ -184,6 +183,7 @@ public class FormularioTarea {
 
         return lista;
     }
+
     // ============================================================
     // ====================== GUARDAR ==============================
     // ============================================================
@@ -195,33 +195,35 @@ public class FormularioTarea {
         LocalDate fin = dpFin.getValue();
         String estado = cbEstado.getValue();
 
+
         if (titulo.isEmpty() || usuario == null || estado == null) {
             new Alert(Alert.AlertType.WARNING, "Completa los campos obligatorios").show();
             return;
         }
 
-        var con = Main.getConexion();
-        var creador = Main.getUsuarioActual();
+        jjn.ConexionCliente con = Main.getConexion();
+        Usuario creador = Main.getUsuarioActual();
 
         if (esUpdate) {
             con.enviar("UPDATE_TAREA"
-                    + Main.SEP + tareaOriginal.getId()
-                    + Main.SEP + titulo
+                    + Main.SEP + this.tareaOriginal.getId()
+                    + Main.SEP + creador.getId()
+                    + Main.SEP + usuario.getId()
                     + Main.SEP + desc
                     + Main.SEP + inicio
                     + Main.SEP + fin
                     + Main.SEP + estado
-                    + Main.SEP + usuario.getId()
+                    + Main.SEP + titulo
             );
         } else {
             con.enviar("INSERT_TAREA"
-                    + Main.SEP + titulo
-                    + Main.SEP + desc
                     + Main.SEP + creador.getId()
                     + Main.SEP + usuario.getId()
+                    + Main.SEP + desc
                     + Main.SEP + inicio
                     + Main.SEP + fin
                     + Main.SEP + estado
+                    + Main.SEP + titulo
             );
         }
 

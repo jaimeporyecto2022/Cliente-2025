@@ -89,7 +89,7 @@ public class Usuario {
     public boolean esJefeOSuperior() {
         return esAdmin() || esJefe();
     }
-    @Override
+    /*@Override
     public String toString() {
         return "Usuario{" +
                 "id=" + id +
@@ -100,5 +100,9 @@ public class Usuario {
                 ", fechaAlta=" + fechaAlta +
                 ", direccion='" + direccion + '\'' +
                 '}';
+    }*/
+    @Override
+    public String toString() {
+        return nombre;   // solo el nombre
     }
 }
