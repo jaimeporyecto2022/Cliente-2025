@@ -8,7 +8,6 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 
     public class Main extends Application {
-
         // ==================== VARIABLES GLOBALES ====================
         private static Usuario usuarioActual;        // Usuario logueado (con todos los datos)
         private static ConexionCliente conexion;      // Conexión viva con el servidor

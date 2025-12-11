@@ -2,6 +2,7 @@ package jjn.dashboardElements;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -20,10 +21,12 @@ public class TareasDashboard extends VBox {
 
     private final ObservableList<Tarea> tareas = FXCollections.observableArrayList();
     private TableView<Tarea> tabla;
+    @FXML
+    private ScrollPane contentArea;
 
 
-    public TareasDashboard() {
-
+    public TareasDashboard(ScrollPane contentArea) {
+        this.contentArea=contentArea;
         Label titulo = new Label("");
 
         Button btnNuevaTarea = crearBotonNuevaTarea(); // ← tu botón ya creado
@@ -165,7 +168,7 @@ public class TareasDashboard extends VBox {
         // BOTÓN VER
         TableColumn<Tarea, Void> colVer = new TableColumn<>("");
         colVer.setPrefWidth(30);
-        colVer.setCellFactory(tc -> crearBotonIcono("fas-search", "#FFD700", this::mostrarDetallesTarea));
+        colVer.setCellFactory(tc -> crearBotonIcono("fas-search", "#FFD700", this::mostrarEditarTarea));
 
         // BOTÓN REPORTE
         TableColumn<Tarea, Void> colReporte = new TableColumn<>("");
@@ -262,42 +265,12 @@ public class TareasDashboard extends VBox {
     }
 
 
-    private void mostrarDetallesTarea(Tarea tarea) {
-        Alert a = new Alert(Alert.AlertType.INFORMATION);
-        a.setTitle("Detalle de tarea");
-        a.setHeaderText(tarea.getTitulo());
-        a.getDialogPane().setStyle("-fx-background-color: #111111;");
-        TextArea ta = new TextArea();
-        ta.setStyle("-fx-control-inner-background: #111111; -fx-text-fill: #00FFAA; -fx-font-size: 15px;");
-        ta.setText("""
-            ID → %d
-            Creador → %s
-            Asignado a → %s
-            Estado → %s
-            
-            Fechas:
-             • Creación: %s
-             • Inicio: %s
-             • Fin: %s
-            
-            Descripción:
-            %s
-            """.formatted(
-                tarea.getId(),
-                tarea.getNombreCreador(),
-                tarea.getNombreAsignado(),
-                tarea.getEstado().toUpperCase(),
-                tarea.getFechaCreacion(),
-                tarea.getFechaInicio() != null ? tarea.getFechaInicio() : "—",
-                tarea.getFechaFin() != null ? tarea.getFechaFin() : "—",
-                tarea.getDescripcion()
-        ));
-        ta.setEditable(false);
-        a.getDialogPane().setContent(ta);
-        a.showAndWait();
+    private void mostrarEditarTarea(Tarea tarea) {
+        FormularioTarea form = new FormularioTarea("update", tarea);
+        form.mostrar();
     }
 
     private void mostrarReporteTarea(Tarea tarea) {
-        new Alert(Alert.AlertType.INFORMATION, "Reportes de esta tarea próximamente...", ButtonType.OK).showAndWait();
+
     }
 }

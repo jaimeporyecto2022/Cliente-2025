@@ -1,6 +1,7 @@
 package jjn;
 import javafx.scene.Node;
 import jjn.dashboardElements.TareasDashboard;
+import jjn.dashboardElements.UsuariosDashboard;
 import jjn.modelos.Tarea;
 import jjn.modelos.*;
 import javafx.application.Platform;
@@ -56,7 +57,7 @@ public class DashboardController {
         agregarBoton("chart-bar", "Reportes", () -> mostrarMensaje("REPORTES"));
 
         if (usuario.esJefeOSuperior()) {
-            agregarBoton("users-cog", "Usuarios", () -> mostrarMensaje("GESTIÓN DE USUARIOS"));
+            agregarBoton("users-cog", "Usuarios", this::mostrarUsuarios);
         }
         if (usuario.esAdmin()) {
             agregarBoton("crown", "Admin", () -> mostrarMensaje("PANEL DE ADMINISTRADOR"));
@@ -109,6 +110,12 @@ public class DashboardController {
         }
     }
     private void mostrarTareasAsignadas() {
-        contentArea.setContent(new TareasDashboard());
+        contentArea.setContent(null);
+        contentArea.setContent(new TareasDashboard(contentArea));
     }
+    private void mostrarUsuarios() {
+        contentArea.setContent(null);
+        contentArea.setContent(new UsuariosDashboard(contentArea));
+    }
+
 }

@@ -11,8 +11,6 @@ public class Usuario {
     private String rol;
     private Integer idDepartamento;
     private String nombreDepartamento;   // ← NUEVO
-    private Integer idJefe;              // ← NUEVO
-    private String nombreJefe;           // ← OPCIONAL: nombre del jefe (si lo necesitas mostrar)
     private LocalDate fechaAlta;         // ← NUEVO
     private String direccion;            // ← NUEVO
 
@@ -60,11 +58,6 @@ public class Usuario {
         this.nombreDepartamento = nombreDepartamento != null ? nombreDepartamento : "Sin departamento";
     }
 
-    public Integer getIdJefe() { return idJefe; }
-    public void setIdJefe(Integer idJefe) { this.idJefe = idJefe; }
-
-    public String getNombreJefe() { return nombreJefe; }
-    public void setNombreJefe(String nombreJefe) { this.nombreJefe = nombreJefe; }
 
     public LocalDate getFechaAlta() { return fechaAlta; }
     public void setFechaAlta(LocalDate fechaAlta) { this.fechaAlta = fechaAlta; }

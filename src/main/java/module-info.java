@@ -11,6 +11,7 @@ module jjn.proyecto_cliente {
     requires eu.hansolo.tilesfx;
     requires com.almasb.fxgl.all;
 
+
     opens jjn to javafx.fxml;
     exports jjn;
 }
