@@ -25,6 +25,7 @@ public class NominasDashboard extends VBox {
 
     public NominasDashboard(Usuario usuario) {
         Label titulo = new Label("Nóminas");
+        titulo.setStyle("-fx-font-size: 32px;");
         this.usuario=usuario;
         Button btnNuevaNomina = crearBotonNuevaNomina();
 

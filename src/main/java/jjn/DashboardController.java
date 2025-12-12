@@ -1,6 +1,7 @@
 package jjn;
 import javafx.scene.Node;
 import jjn.dashboardElements.TareasDashboard;
+import jjn.dashboardElements.TareasUsuarioDashboard;
 import jjn.dashboardElements.UsuariosDashboard;
 import jjn.modelos.Tarea;
 import jjn.modelos.*;
@@ -51,16 +52,15 @@ public class DashboardController {
         sidebar.getChildren().clear();
         sidebar.setPrefWidth(80);
         sidebar.setStyle("-fx-background-color: #111111; -fx-padding: 20 10; -fx-spacing: 15;");
-        agregarBoton("tasks", "Tareas", () -> mostrarMensaje("REPO3RTES"));
+        if(!Main.getUsuarioActual().esAdmin()) {
+            agregarBoton("tasks", "Tareas",  this::mostrarTareasUsuarioDashboard);
+        }
+
         agregarBoton("paper-plane", "Asignar", this::mostrarTareasAsignadas);
-        agregarBoton("file-invoice-dollar", "Nóminas", () -> mostrarMensaje("NÓMINAS"));
         agregarBoton("chart-bar", "Reportes", () -> mostrarMensaje("REPORTES"));
 
-        if (usuario.esJefeOSuperior()) {
+        if (usuario.esAdmin()||Main.getUsuarioActual().getNombreDepartamento().equals("contabilidad") ||Main.getUsuarioActual().getNombreDepartamento().equals("Recursos Humanos")) {
             agregarBoton("users-cog", "Usuarios", this::mostrarUsuarios);
-        }
-        if (usuario.esAdmin()) {
-            agregarBoton("crown", "Admin", () -> mostrarMensaje("PANEL DE ADMINISTRADOR"));
         }
         agregarBoton("sign-out-alt", "Salir", this::cerrarSesion);
     }
@@ -112,6 +112,10 @@ public class DashboardController {
     private void mostrarTareasAsignadas() {
         contentArea.setContent(null);
         contentArea.setContent(new TareasDashboard(contentArea));
+    }
+    private void mostrarTareasUsuarioDashboard() {
+        contentArea.setContent(null);
+        contentArea.setContent(new TareasUsuarioDashboard(contentArea));
     }
     private void mostrarUsuarios() {
         contentArea.setContent(null);

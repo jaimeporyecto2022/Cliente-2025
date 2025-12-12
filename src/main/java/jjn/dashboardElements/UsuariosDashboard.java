@@ -27,11 +27,18 @@ public class UsuariosDashboard extends VBox {
 
     public UsuariosDashboard(ScrollPane contentArea) {
         Label titulo = new Label("Usuarios");
+        titulo.setStyle("-fx-font-size: 32px;");
         this.contentArea = contentArea;
 
         Button btnNuevoUsuario = crearBotonNuevoUsuario();
 
-        HBox barraSuperior = new HBox(titulo, btnNuevoUsuario);
+        HBox barraSuperior;
+        if (Main.getUsuarioActual().esAdmin() || Main.getUsuarioActual().getNombreDepartamento() == "RecursosHumanos") {
+            barraSuperior = new HBox(titulo,btnNuevoUsuario);
+        }else{
+            barraSuperior = new HBox(titulo);
+        }
+
         barraSuperior.setSpacing(20);
         barraSuperior.setAlignment(Pos.CENTER_RIGHT);
         barraSuperior.setStyle("-fx-padding: 10 15 10 15;");
@@ -78,7 +85,9 @@ public class UsuariosDashboard extends VBox {
 
         btn.setOnAction(e -> {
             FormularioUsuario user = new FormularioUsuario("insert", null);
-            user.mostrar();
+            user.mostrar();        // Espera hasta cerrar…
+
+            cargarUsuariosDesdeServidor();    // 🔄 REFRESCAR AL CERRAR
         });
 
         return btn;
@@ -122,7 +131,14 @@ public class UsuariosDashboard extends VBox {
         colEditar.setPrefWidth(30);
         colEditar.setCellFactory(tc -> crearBotonIcono("fas-edit", "#00CCFF", this::editarUsuario));
 
-        table.getColumns().addAll(colNombre, colMail, colRol, colDepartamento, colFechaAlta, colnomina, colEditar);
+        table.getColumns().addAll(colNombre, colMail, colRol, colDepartamento, colFechaAlta);
+
+        if(Main.getUsuarioActual().esAdmin() || Main.getUsuarioActual().getNombreDepartamento()=="contabilidad") {
+            table.getColumns().add(colnomina);
+        }
+        if(Main.getUsuarioActual().esAdmin() || Main.getUsuarioActual().getNombreDepartamento()=="Recursos Humanos") {
+            table.getColumns().add(colEditar);
+        }
     }
 
     private TableCell<Usuario, Void> crearBotonIcono(String icono, String color, java.util.function.Consumer<Usuario> accion) {

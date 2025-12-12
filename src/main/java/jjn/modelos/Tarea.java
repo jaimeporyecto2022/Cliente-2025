@@ -14,7 +14,7 @@ public class Tarea {
     private String nombreCreador;     // ← NUEVO
     private String nombreAsignado;    // ← NUEVO
     private int idAsignado;
-
+    public Tarea(){}
     public Tarea(int id, String titulo, String descripcion,
                  LocalDate fechaCreacion, LocalDate fechaInicio, LocalDate fechaFin,
                  String estado, String nombreCreador, String nombreAsignado,int idAsignado) {
@@ -30,23 +30,77 @@ public class Tarea {
         this.idAsignado = idAsignado;
     }
 
-    // ==================== GETTERS ====================
-    public int getId() { return id; }
-    public String getTitulo() { return titulo; }
-    public String getDescripcion() { return descripcion; }
-    public LocalDate getFechaCreacion() { return fechaCreacion; }
-    public LocalDate getFechaInicio() { return fechaInicio; }
-    public LocalDate getFechaFin() { return fechaFin; }
-    public String getEstado() { return estado; }
-    public String getNombreCreador() { return nombreCreador; }
-    public String getNombreAsignado() { return nombreAsignado; }
 
-    // ==================== SETTERS (opcional, para futuro) ====================
-    public void setEstado(String estado) { this.estado = estado; }
+    public int getId() {
+        return id;
+    }
 
-    @Override
-    public String toString() {
-        return String.format("%s → %s (%s)", titulo, nombreAsignado, estado);
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+
+    public LocalDate getFechaCreacion() {
+        return fechaCreacion;
+    }
+
+    public void setFechaCreacion(LocalDate fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
+    }
+
+    public LocalDate getFechaInicio() {
+        return fechaInicio;
+    }
+
+    public void setFechaInicio(LocalDate fechaInicio) {
+        this.fechaInicio = fechaInicio;
+    }
+
+    public LocalDate getFechaFin() {
+        return fechaFin;
+    }
+
+    public void setFechaFin(LocalDate fechaFin) {
+        this.fechaFin = fechaFin;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public String getNombreCreador() {
+        return nombreCreador;
+    }
+
+    public void setNombreCreador(String nombreCreador) {
+        this.nombreCreador = nombreCreador;
+    }
+
+    public String getNombreAsignado() {
+        return nombreAsignado;
+    }
+
+    public void setNombreAsignado(String nombreAsignado) {
+        this.nombreAsignado = nombreAsignado;
     }
 
     public int getIdAsignado() {

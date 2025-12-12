@@ -77,10 +77,12 @@ public class LoginController {
                     datos[3],                                                         // mail
                     datos[4],                                                         // rol
                     safeParseInt(datos[5]),                                           // idDepartamento → ahora seguro
-                    datos[6],                                                         // nombreDepartamento
-                    LocalDate.parse(datos[7]),                                        // fechaAlta
+                    datos[6],                        // fechaAlta
                     datos.length > 9 ? datos[8] : ""                                  // direccion
             );
+            /*if(!datos[7].isEmpty()) {
+                usuario.setFechaAlta(LocalDate.parse(datos[7]));
+            }*/
 
             // Guardamos en Main (accesible desde cualquier parte del cliente)
             Main.setUsuarioActual(usuario);
@@ -118,5 +120,8 @@ public class LoginController {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+    private String hashPassword(String password) {
+        return org.mindrot.jbcrypt.BCrypt.hashpw(password, org.mindrot.jbcrypt.BCrypt.gensalt());
     }
 }

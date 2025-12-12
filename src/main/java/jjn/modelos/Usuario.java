@@ -30,6 +30,17 @@ public class Usuario {
         this.fechaAlta = fechaAlta;
         this.direccion = direccion != null ? direccion : "";
     }
+    public Usuario(int id, String nombre, String mail, String rol,
+                   Integer idDepartamento, String nombreDepartamento,
+                    String direccion) {
+        this.id = id;
+        this.nombre = nombre;
+        this.mail = mail;
+        this.rol = rol;
+        this.idDepartamento = idDepartamento != null ? idDepartamento : 0;
+        this.nombreDepartamento = nombreDepartamento != null ? nombreDepartamento : "Sin departamento";
+        this.direccion = direccion != null ? direccion : "";
+    }
 
     // ==================== GETTERS & SETTERS ====================
 

@@ -29,7 +29,11 @@ public class FormularioTarea {
     private DatePicker dpInicio;
     private DatePicker dpFin;
     private ComboBox<String> cbEstado;
+    private Runnable onCloseCallback;   // 🔥 NUEVO
 
+    public void setOnCloseCallback(Runnable callback) {  // 🔥 NUEVO
+        this.onCloseCallback = callback;
+    }
     public FormularioTarea(String accion, Tarea tarea) {
 
         this.esUpdate = accion.equalsIgnoreCase("update");
@@ -97,6 +101,10 @@ public class FormularioTarea {
         }
 
         stage.setScene(new Scene(root, 600, 700));
+        // 🔥 IMPORTANTE: ejecutar callback al cerrar
+        stage.setOnHidden(e -> {
+            if (onCloseCallback != null) onCloseCallback.run();
+        });
     }
 
     public void mostrar() {

@@ -10,6 +10,7 @@ module jjn.proyecto_cliente {
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
     requires com.almasb.fxgl.all;
+    requires jbcrypt;
 
 
     opens jjn to javafx.fxml;
