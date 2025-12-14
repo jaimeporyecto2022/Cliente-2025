@@ -214,5 +214,6 @@ public class UsuariosDashboard extends VBox {
     private void editarUsuario(Usuario usuario) {
         FormularioUsuario user = new FormularioUsuario("update", usuario);
         user.mostrar();
+        cargarUsuariosDesdeServidor();
     }
 }

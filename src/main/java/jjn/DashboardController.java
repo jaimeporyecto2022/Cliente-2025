@@ -1,5 +1,6 @@
 package jjn;
 import javafx.scene.Node;
+import jjn.dashboardElements.EstadisticaDepartamentoDashboard;
 import jjn.dashboardElements.TareasDashboard;
 import jjn.dashboardElements.TareasUsuarioDashboard;
 import jjn.dashboardElements.UsuariosDashboard;
@@ -55,9 +56,11 @@ public class DashboardController {
         if(!Main.getUsuarioActual().esAdmin()) {
             agregarBoton("tasks", "Tareas",  this::mostrarTareasUsuarioDashboard);
         }
+        if(Main.getUsuarioActual().esAdmin()) {
+            agregarBoton("chart-bar", "Reportes", this::estadisticaDepartamentoDashboard);
+        }
 
         agregarBoton("paper-plane", "Asignar", this::mostrarTareasAsignadas);
-        agregarBoton("chart-bar", "Reportes", () -> mostrarMensaje("REPORTES"));
 
         if (usuario.esAdmin()||Main.getUsuarioActual().getNombreDepartamento().equals("contabilidad") ||Main.getUsuarioActual().getNombreDepartamento().equals("Recursos Humanos")) {
             agregarBoton("users-cog", "Usuarios", this::mostrarUsuarios);
@@ -112,6 +115,10 @@ public class DashboardController {
     private void mostrarTareasAsignadas() {
         contentArea.setContent(null);
         contentArea.setContent(new TareasDashboard(contentArea));
+    }
+    private void estadisticaDepartamentoDashboard() {
+        contentArea.setContent(null);
+        contentArea.setContent(new EstadisticaDepartamentoDashboard(contentArea));
     }
     private void mostrarTareasUsuarioDashboard() {
         contentArea.setContent(null);

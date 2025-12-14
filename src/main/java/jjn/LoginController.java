@@ -34,7 +34,7 @@ public class LoginController {
             return;
         }
 
-        lblMensaje.setText("Conectando al Imperio...");
+        lblMensaje.setText("Conectando al Servidor...");
         lblMensaje.setStyle("-fx-text-fill: #FFD700;");
 
         new Thread(() -> {

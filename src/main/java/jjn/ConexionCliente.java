@@ -30,6 +30,7 @@ public class ConexionCliente {
         while ((linea = in.readLine()) != null) {
             if (linea.equals("FIN_COMANDO")) break;
             sb.append(linea);//.append("\n");
+            System.out.println(linea);
         }
         ultimaRespuesta = sb.toString().trim();
         return ultimaRespuesta;
