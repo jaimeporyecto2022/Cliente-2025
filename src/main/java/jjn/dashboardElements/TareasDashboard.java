@@ -275,6 +275,6 @@ public class TareasDashboard extends VBox {
 
     private void mostrarReporteTarea(Tarea tarea) {
         contentArea.setContent(null);
-        contentArea.setContent(new ReportesDashboard(tarea));
+        contentArea.setContent(new ReportesDashboard(tarea,true));
     }
 }

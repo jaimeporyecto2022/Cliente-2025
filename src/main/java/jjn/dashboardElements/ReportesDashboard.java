@@ -21,15 +21,22 @@ public class ReportesDashboard extends VBox {
     private final ObservableList<Reporte> reportes = FXCollections.observableArrayList();
     private TableView<Reporte> tabla;
     private final Tarea tarea;
+    private  boolean hideit;
 
-    public ReportesDashboard(Tarea tarea) {
+    public ReportesDashboard(Tarea tarea,boolean hideit) {
+        hideit=hideit;
         this.tarea = tarea;
 
         Label titulo = new Label("Reportes Fecha Limite: "+ tarea.getFechaFin());
         titulo.setStyle("-fx-font-size: 32px;");
         Button btnNuevoReporte = crearBotonNuevoReporte();
-
-        HBox barraSuperior = new HBox(titulo, btnNuevoReporte);
+        HBox barraSuperior;
+        System.out.println(Main.getUsuarioActual().getId()+"--"+tarea.getIdAsignado());
+        if(hideit) {
+            barraSuperior = new HBox(titulo);
+        }else{
+            barraSuperior = new HBox(titulo, btnNuevoReporte);
+        }
         barraSuperior.setSpacing(20);
         barraSuperior.setAlignment(Pos.CENTER_RIGHT);
         barraSuperior.setStyle("-fx-padding: 10 15 10 15;");
@@ -138,7 +145,7 @@ public class ReportesDashboard extends VBox {
         colCerrar.setCellFactory(tc -> crearBotonIcono("fas-check", "#22FF22",
                 this::cerrarReporte));
 
-        table.getColumns().addAll( colFin, colInfo, colUsuario, colEstado, colEditar, colCerrar);
+        table.getColumns().addAll( colFin, colInfo, colUsuario, colEstado);
     }
 
     private TableCell<Reporte, Void> crearBotonIcono(String icono, String color,
@@ -177,7 +184,7 @@ public class ReportesDashboard extends VBox {
                 con.enviar("REPORTES" + Main.SEP + tarea.getId());
 
                 String respuesta = con.leerRespuestaCompleta();
-
+                System.out.println(respuesta + "<-reporte");
                 Platform.runLater(() -> reportes.clear());
 
                 String[] lineas = respuesta.split(Main.JUMP);
@@ -185,9 +192,6 @@ public class ReportesDashboard extends VBox {
                     if (linea.trim().isEmpty()) continue;
 
                     String[] campos = linea.split(Main.SEP);
-
-                    if (campos.length < 7) continue;
-
                     try {
                         Reporte r = new Reporte();
 

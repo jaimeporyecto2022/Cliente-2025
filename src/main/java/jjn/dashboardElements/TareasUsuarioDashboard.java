@@ -162,18 +162,12 @@ public class TareasUsuarioDashboard extends VBox {
                 }
             }
         });
-
-        // BOTÓN VER
-        TableColumn<Tarea, Void> colVer = new TableColumn<>("");
-        colVer.setPrefWidth(30);
-        colVer.setCellFactory(tc -> crearBotonIcono("fas-search", "#FFD700", this::mostrarEditarTarea));
-
         // BOTÓN REPORTE
         TableColumn<Tarea, Void> colReporte = new TableColumn<>("");
         colReporte.setPrefWidth(30);
         colReporte.setCellFactory(tc -> crearBotonIcono("fas-file-alt", "#00CCFF", this::mostrarReporteTarea));
 
-        table.getColumns().addAll(colTitulo, colAsignado, colFechas, colEstado, colVer, colReporte);
+        table.getColumns().addAll(colTitulo, colAsignado, colFechas, colEstado, colReporte);
     }
 
     private TableCell<Tarea, Void> crearBotonIcono(String icono, String color, java.util.function.Consumer<Tarea> accion) {
@@ -226,11 +220,12 @@ public class TareasUsuarioDashboard extends VBox {
 
                     Tarea t = new Tarea();
                     t.setId(Integer.parseInt(c[0]));
-                    t.setDescripcion(c[1]);
-                    t.setFechaInicio("Sin fecha".equals(c[2]) ? null : LocalDate.parse(c[2]));
-                    t.setFechaFin("Sin fecha".equals(c[3]) ? null : LocalDate.parse(c[3]));
-                    t.setEstado(c[4]);
-                    t.setNombreAsignado(c[5]);
+                    t.setTitulo(c[1]);
+                    t.setDescripcion(c[2]);
+                    t.setFechaInicio("Sin fecha".equals(c[2]) ? null : LocalDate.parse(c[3]));
+                    t.setFechaFin("Sin fecha".equals(c[3]) ? null : LocalDate.parse(c[4]));
+                    t.setEstado(c[5]);
+                    t.setNombreAsignado(c[6]);
 
                     Platform.runLater(() -> tareas.add(t));
                 }
@@ -243,15 +238,8 @@ public class TareasUsuarioDashboard extends VBox {
 
 
 
-    private void mostrarEditarTarea(Tarea tarea) {
-        FormularioTarea f = new FormularioTarea("update", tarea);
-        f.setOnCloseCallback(() -> cargarTareasDesdeServidor()); // 🔥 refrescar
-        f.mostrar();
-
-    }
-
     private void mostrarReporteTarea(Tarea tarea) {
         contentArea.setContent(null);
-        contentArea.setContent(new ReportesDashboard(tarea));
+        contentArea.setContent(new ReportesDashboard(tarea,false));
     }
 }

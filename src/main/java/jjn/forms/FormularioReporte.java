@@ -47,7 +47,7 @@ public class FormularioReporte {
         txtInfo.setPrefRowCount(5);
 
         cbEstado = new ComboBox<>();
-        cbEstado.getItems().addAll("en_curso", "finalizada", "irrealizable", "transferir");
+        cbEstado.getItems().addAll("pendiente", "No puedo hacerlo", "imposible", "completado");
         cbEstado.setPromptText("Estado del reporte");
 
         // ===== BOTONES =====
@@ -88,16 +88,8 @@ public class FormularioReporte {
     // ============================================================
     private void guardar() {
 
-        LocalDate inicio = dpInicio.getValue();
-        LocalDate fin = dpFin.getValue();
         String info = txtInfo.getText().trim();
         String estado = cbEstado.getValue();
-
-        if (inicio == null || info.isEmpty() || estado == null) {
-            new Alert(Alert.AlertType.WARNING, "Completa todos los campos obligatorios").show();
-            return;
-        }
-
         var con = Main.getConexion();
 
         /*// UPDATE
@@ -116,12 +108,11 @@ public class FormularioReporte {
         else */
 
             con.enviar(
-                    "INSERT_REPORTE"
+                    "CREAR_REPORTE"
                             + Main.SEP + tarea.getId()
-                            + Main.SEP + inicio
-                            + Main.SEP + (fin == null ? "" : fin)
                             + Main.SEP + info
-                            + Main.SEP + estado
+                            + Main.SEP + estado+ Main.SEP
+                            + Main.getUsuarioActual().getId()
             );
 
 
