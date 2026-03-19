@@ -3,15 +3,14 @@ package jjn.dashboardElements;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import jjn.Main;
-import jjn.forms.FormularioTarea;
+import jjn.Cliente;
 import jjn.forms.FormularioUsuario;
 import jjn.modelos.Usuario;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -22,21 +21,53 @@ public class UsuariosDashboard extends VBox {
 
     private final ObservableList<Usuario> usuarios = FXCollections.observableArrayList();
     private TableView<Usuario> tabla;
+    private FilteredList<Usuario> usuariosFiltrados;
+
     @FXML
     private ScrollPane contentArea;
 
     public UsuariosDashboard(ScrollPane contentArea) {
+
+        this.contentArea = contentArea;
+
         Label titulo = new Label("Usuarios");
         titulo.setStyle("-fx-font-size: 32px;");
-        this.contentArea = contentArea;
+
+        // 🔍 BUSCADOR
+        TextField buscador = new TextField();
+        buscador.setPromptText("Buscar usuario...");
+        buscador.setStyle("""
+                -fx-background-color: #1E1E1E;
+                -fx-text-fill: white;
+                -fx-prompt-text-fill: #666666;
+                -fx-background-radius: 10;
+                -fx-padding: 8 12;
+                """);
+
+        buscador.setPrefWidth(250);
+
+        // FILTRADO
+        usuariosFiltrados = new FilteredList<>(usuarios, p -> true);
+
+        buscador.textProperty().addListener((obs, oldVal, newVal) -> {
+            usuariosFiltrados.setPredicate(usuario -> {
+                if (newVal == null || newVal.isEmpty()) return true;
+                return usuario.getNombre().toLowerCase().contains(newVal.toLowerCase());
+            });
+        });
 
         Button btnNuevoUsuario = crearBotonNuevoUsuario();
 
+        //  BARRA SUPERIOR
         HBox barraSuperior;
-        if (Main.getUsuarioActual().esAdmin() || Main.getUsuarioActual().getNombreDepartamento() == "RecursosHumanos") {
-            barraSuperior = new HBox(titulo,btnNuevoUsuario);
-        }else{
-            barraSuperior = new HBox(titulo);
+
+        if (Cliente.getUsuarioActual().esAdmin() ||
+                Cliente.getUsuarioActual().getNombreDepartamento().equals("Recursos Humanos")) {
+
+            barraSuperior = new HBox(titulo, buscador, btnNuevoUsuario);
+
+        } else {
+            barraSuperior = new HBox(titulo, buscador);
         }
 
         barraSuperior.setSpacing(20);
@@ -46,6 +77,12 @@ public class UsuariosDashboard extends VBox {
         HBox.setHgrow(titulo, Priority.ALWAYS);
 
         tabla = crearTabla();
+
+        // APLICAR FILTRO + ORDEN
+        SortedList<Usuario> sortedData = new SortedList<>(usuariosFiltrados);
+        sortedData.comparatorProperty().bind(tabla.comparatorProperty());
+        tabla.setItems(sortedData);
+
         cargarUsuariosDesdeServidor();
 
         ScrollPane scroll = new ScrollPane(tabla);
@@ -85,9 +122,8 @@ public class UsuariosDashboard extends VBox {
 
         btn.setOnAction(e -> {
             FormularioUsuario user = new FormularioUsuario("insert", null);
-            user.mostrar();        // Espera hasta cerrar…
-
-            cargarUsuariosDesdeServidor();    // 🔄 REFRESCAR AL CERRAR
+            user.mostrar();
+            cargarUsuariosDesdeServidor();
         });
 
         return btn;
@@ -95,7 +131,6 @@ public class UsuariosDashboard extends VBox {
 
     private TableView<Usuario> crearTabla() {
         TableView<Usuario> table = new TableView<>();
-        table.setItems(usuarios);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
         tableColumnFactory(table);
@@ -103,6 +138,7 @@ public class UsuariosDashboard extends VBox {
     }
 
     private void tableColumnFactory(TableView<Usuario> table) {
+
         TableColumn<Usuario, String> colNombre = new TableColumn<>("Nombre");
         colNombre.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getNombre()));
 
@@ -121,22 +157,23 @@ public class UsuariosDashboard extends VBox {
                 c.getValue().getFechaAlta() != null ? c.getValue().getFechaAlta().format(fmt) : "—"
         ));
 
-        // Botón ver
         TableColumn<Usuario, Void> colnomina = new TableColumn<>("");
         colnomina.setPrefWidth(30);
         colnomina.setCellFactory(tc -> crearBotonIcono("fas-file-invoice-dollar", "#FFD700", this::mostrarNominas));
 
-        // Botón editar
         TableColumn<Usuario, Void> colEditar = new TableColumn<>("");
         colEditar.setPrefWidth(30);
         colEditar.setCellFactory(tc -> crearBotonIcono("fas-edit", "#00CCFF", this::editarUsuario));
 
         table.getColumns().addAll(colNombre, colMail, colRol, colDepartamento, colFechaAlta);
 
-        if(Main.getUsuarioActual().esAdmin() || Main.getUsuarioActual().getNombreDepartamento()=="contabilidad") {
+        if (Cliente.getUsuarioActual().esAdmin() ||
+                Cliente.getUsuarioActual().getNombreDepartamento().equals("contabilidad")) {
             table.getColumns().add(colnomina);
         }
-        if(Main.getUsuarioActual().esAdmin() || Main.getUsuarioActual().getNombreDepartamento()=="Recursos Humanos") {
+
+        if (Cliente.getUsuarioActual().esAdmin() ||
+                Cliente.getUsuarioActual().getNombreDepartamento().equals("Recursos Humanos")) {
             table.getColumns().add(colEditar);
         }
     }
@@ -171,31 +208,32 @@ public class UsuariosDashboard extends VBox {
     private void cargarUsuariosDesdeServidor() {
         new Thread(() -> {
             try {
-                var conexion = Main.getConexion();
+                var conexion = Cliente.getConexion();
                 conexion.enviar("TODOS_USUARIOS");
 
                 String respuesta = conexion.leerRespuestaCompleta();
                 Platform.runLater(() -> usuarios.clear());
 
-                String[] lineas = respuesta.split(Main.JUMP, -1);
+                String[] lineas = respuesta.split(Cliente.JUMP, -1);
                 for (String linea : lineas) {
                     if (linea.trim().isEmpty()) continue;
-                    String[] campos = linea.split(Main.SEP, -1);
+
+                    String[] campos = linea.split(Cliente.SEP, -1);
                     if (campos.length < 8) continue;
 
                     try {
                         Usuario u = new Usuario();
                         u.setId(Integer.parseInt(campos[0]));
-                        u.setNombre(campos[1]);      // nombre
-                        u.setMail(campos[2]);      // mail
-                        u.setRol(campos[3]);     // rol
-                        u.setIdDepartamento(campos[4].isEmpty() ? null : Integer.parseInt(campos[4])); // idDepartamento
-                        u.setNombreDepartamento(campos[5]);      // nombreDepartamento
-                        u.setFechaAlta(campos[6].isEmpty() ? null : java.time.LocalDate.parse(campos[6])); // fechaAlta
+                        u.setNombre(campos[1]);
+                        u.setMail(campos[2]);
+                        u.setRol(campos[3]);
+                        u.setIdDepartamento(campos[4].isEmpty() ? null : Integer.parseInt(campos[4]));
+                        u.setNombreDepartamento(campos[5]);
+                        u.setFechaAlta(campos[6].isEmpty() ? null : java.time.LocalDate.parse(campos[6]));
                         u.setDireccion(campos[7]);
+
                         Platform.runLater(() -> usuarios.add(u));
                     } catch (Exception e) {
-                        System.out.println("Error parseando usuario: " + linea);
                         e.printStackTrace();
                     }
                 }

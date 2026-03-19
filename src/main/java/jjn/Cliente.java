@@ -1,4 +1,4 @@
-// src/main/java/jjn/Main.java
+// src/main/java/jjn/Cliente.java
 package jjn;
 
 import jjn.modelos.Usuario;
@@ -7,12 +7,13 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-    public class Main extends Application {
+    public class Cliente extends Application {
         // ==================== VARIABLES GLOBALES ====================
         private static Usuario usuarioActual;        // Usuario logueado (con todos los datos)
         private static ConexionCliente conexion;      // Conexión viva con el servidor
         public static final String SEP = "@Tr&m"; //separador comunicación
         public static final String JUMP = "@Jump";
+        public static String ip;
         // ==================== GETTERS Y SETTERS ====================
         public static Usuario getUsuarioActual() {return usuarioActual;}
         public static void setUsuarioActual(Usuario usuario) {

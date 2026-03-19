@@ -1,6 +1,5 @@
 package jjn.forms;
 
-import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -8,11 +7,9 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import jjn.Main;
+import jjn.Cliente;
 import jjn.modelos.Nomina;
 import jjn.modelos.Usuario;
-
-import java.time.LocalDate;
 
 public class FormularioNomina {
 
@@ -22,19 +19,19 @@ public class FormularioNomina {
 
     // ===== UI =====
     private TextField txtImporte;
-    //private DatePicker dpFecha;
     private TextField txtConcepto;
     private ComboBox<String> cbTipo;
     private Usuario usuario;
 
     // ===== CALLBACK PARA NOTIFICAR CIERRE =====
-    private Runnable onCloseCallback;   // 🔥 NUEVO
+    private Runnable onCloseCallback;
 
-    public void setOnCloseCallback(Runnable callback) {   // 🔥 NUEVO
+    public void setOnCloseCallback(Runnable callback) {
         this.onCloseCallback = callback;
     }
 
     public FormularioNomina(String accion, Nomina nomina, Usuario usuario) {
+
         this.usuario = usuario;
         this.esUpdate = accion.equalsIgnoreCase("update");
         this.nominaOriginal = nomina;
@@ -48,6 +45,7 @@ public class FormularioNomina {
         root.setStyle("-fx-background-color: #0f0f0f;");
 
         // ===== CAMPOS =====
+
         txtImporte = new TextField();
         txtImporte.setPromptText("Importe (€)");
 
@@ -59,13 +57,25 @@ public class FormularioNomina {
         cbTipo.setPromptText("Tipo de nómina");
 
         // ===== BOTONES =====
+
         Button btnGuardar = new Button("Guardar");
         btnGuardar.setOnAction(e -> guardar());
 
         Button btnCancelar = new Button("Cancelar");
         btnCancelar.setOnAction(e -> stage.close());
 
-        HBox botones = new HBox(15, btnGuardar, btnCancelar);
+        Button btnEliminar = new Button("Eliminar");
+        btnEliminar.setStyle("-fx-background-color:#8b0000; -fx-text-fill:white;");
+        btnEliminar.setOnAction(e -> eliminarNomina());
+
+        HBox botones;
+
+        if (esUpdate) {
+            botones = new HBox(15, btnEliminar, btnGuardar, btnCancelar);
+        } else {
+            botones = new HBox(15, btnGuardar, btnCancelar);
+        }
+
         botones.setAlignment(Pos.CENTER_RIGHT);
 
         root.getChildren().addAll(
@@ -96,8 +106,9 @@ public class FormularioNomina {
     }
 
     // ============================================================
-    // ========== CARGAR DATOS EXISTENTES =========================
+    // CARGAR DATOS EXISTENTES
     // ============================================================
+
     private void cargarDatosExistentes() {
         txtImporte.setText(String.valueOf(nominaOriginal.getImporte()));
         txtConcepto.setText(nominaOriginal.getConcepto());
@@ -105,8 +116,9 @@ public class FormularioNomina {
     }
 
     // ============================================================
-    // =========================== GUARDAR =========================
+    // GUARDAR
     // ============================================================
+
     private void guardar() {
 
         String strImporte = txtImporte.getText().trim();
@@ -114,6 +126,7 @@ public class FormularioNomina {
         String tipo = cbTipo.getValue();
 
         double importe;
+
         try {
             importe = Double.parseDouble(strImporte);
         } catch (NumberFormatException e) {
@@ -121,27 +134,68 @@ public class FormularioNomina {
             return;
         }
 
-        var con = Main.getConexion();
+        var con = Cliente.getConexion();
 
         // UPDATE
         if (esUpdate) {
             con.enviar("UPDATE_NOMINA"
-                    + Main.SEP + nominaOriginal.getId()
-                    + Main.SEP + importe
-                    + Main.SEP + concepto
-                    + Main.SEP + tipo
+                    + Cliente.SEP + nominaOriginal.getId()
+                    + Cliente.SEP + importe
+                    + Cliente.SEP + concepto
+                    + Cliente.SEP + tipo
             );
         }
         // INSERT
         else {
             con.enviar("INSERT_NOMINA"
-                    + Main.SEP + this.usuario.getId()
-                    + Main.SEP + importe
-                    + Main.SEP + concepto
-                    + Main.SEP + tipo
+                    + Cliente.SEP + this.usuario.getId()
+                    + Cliente.SEP + importe
+                    + Cliente.SEP + concepto
+                    + Cliente.SEP + tipo
             );
         }
 
         stage.close();
+    }
+
+    // ============================================================
+    // ELIMINAR NOMINA
+    // ============================================================
+
+    private void eliminarNomina() {
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+
+        confirm.setTitle("Eliminar nómina");
+        confirm.setHeaderText("Confirmar eliminación");
+        confirm.setContentText("¿Seguro que deseas eliminar esta nómina?");
+
+        if (confirm.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) {
+            return;
+        }
+
+        try {
+
+            var con = Cliente.getConexion();
+
+            con.enviar("ELIMINAR_NOMINA"
+                    + Cliente.SEP + nominaOriginal.getId()
+            );
+            //////////////////////////////error corregido
+            con.leerRespuestaCompleta();
+
+            if (onCloseCallback != null) {
+                onCloseCallback.run();
+            }
+            stage.close();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            new Alert(Alert.AlertType.ERROR,
+                    "Error al eliminar nómina"
+            ).show();
+        }
     }
 }

@@ -7,11 +7,9 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import jjn.Main;
+import jjn.Cliente;
 import jjn.forms.FormularioNomina;
-import jjn.forms.FormularioUsuario;
 import jjn.modelos.Nomina;
-import jjn.modelos.Tarea;
 import jjn.modelos.Usuario;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -21,12 +19,13 @@ public class NominasDashboard extends VBox {
 
     private final ObservableList<Nomina> nominas = FXCollections.observableArrayList();
     private TableView<Nomina> tabla;
-        private Usuario usuario;
+    private Usuario usuario;
 
     public NominasDashboard(Usuario usuario) {
         Label titulo = new Label("Nóminas");
         titulo.setStyle("-fx-font-size: 32px;");
-        this.usuario=usuario;
+        this.usuario = usuario;
+
         Button btnNuevaNomina = crearBotonNuevaNomina();
 
         HBox barraSuperior = new HBox(titulo, btnNuevaNomina);
@@ -73,9 +72,9 @@ public class NominasDashboard extends VBox {
         btn.setCursor(javafx.scene.Cursor.HAND);
         btn.setOnMouseEntered(e -> btn.setStyle(estiloHover));
         btn.setOnMouseExited(e -> btn.setStyle(estiloBase));
-        btn.setOnAction(e -> {//===========================================================insert
+        btn.setOnAction(e -> {
             FormularioNomina f = new FormularioNomina("insert", null, usuario);
-            f.setOnCloseCallback(() -> cargarNominasDesdeServidor());
+            f.setOnCloseCallback(this::cargarNominasDesdeServidor);
             f.mostrar();
         });
 
@@ -116,17 +115,16 @@ public class NominasDashboard extends VBox {
                 new javafx.beans.property.SimpleStringProperty(c.getValue().getTipo())
         );
 
-        TableColumn<Nomina, String> colUsuario = new TableColumn<>("Usuario");
-        colUsuario.setCellValueFactory(c ->
-                new javafx.beans.property.SimpleStringProperty(String.valueOf(c.getValue().getIdUsuario()))
-        );
-
-
         TableColumn<Nomina, Void> colEditar = new TableColumn<>("");
         colEditar.setPrefWidth(30);
         colEditar.setCellFactory(tc -> crearBotonIcono("fas-edit", "#00CCFF", this::editarNomina));
 
-        table.getColumns().addAll(colImporte, colFecha, colConcepto, colTipo, /*colUsuario*/ colEditar);
+        // 🔥 NUEVA COLUMNA DUPLICAR
+        TableColumn<Nomina, Void> colDuplicar = new TableColumn<>("");
+        colDuplicar.setPrefWidth(30);
+        colDuplicar.setCellFactory(tc -> crearBotonIcono("fas-copy", "#FFD700", this::duplicarNomina));
+
+        table.getColumns().addAll(colImporte, colFecha, colConcepto, colTipo, colEditar, colDuplicar);
     }
 
     private TableCell<Nomina, Void> crearBotonIcono(String icono, String color, java.util.function.Consumer<Nomina> accion) {
@@ -158,20 +156,19 @@ public class NominasDashboard extends VBox {
     }
 
     private void cargarNominasDesdeServidor() {
-        System.out.println("cargar nominas");
         new Thread(() -> {
             try {
-                var conexion = Main.getConexion();
-                conexion.enviar("NOMINAS_USUARIO"+ Main.SEP + usuario.getId());
+                var conexion = Cliente.getConexion();
+                conexion.enviar("NOMINAS_USUARIO" + Cliente.SEP + usuario.getId());
 
                 String respuesta = conexion.leerRespuestaCompleta();
                 Platform.runLater(() -> nominas.clear());
 
-                String[] lineas = respuesta.split(Main.JUMP, -1);
+                String[] lineas = respuesta.split(Cliente.JUMP, -1);
                 for (String linea : lineas) {
                     if (linea.trim().isEmpty()) continue;
 
-                    String[] campos = linea.split(Main.SEP, -1);
+                    String[] campos = linea.split(Cliente.SEP, -1);
                     if (campos.length < 6) continue;
 
                     try {
@@ -185,7 +182,6 @@ public class NominasDashboard extends VBox {
 
                         Platform.runLater(() -> nominas.add(n));
                     } catch (Exception e) {
-                        System.out.println("Error parseando nómina: " + linea);
                         e.printStackTrace();
                     }
                 }
@@ -196,11 +192,35 @@ public class NominasDashboard extends VBox {
         }).start();
     }
 
-
-
     private void editarNomina(Nomina nomina) {
         FormularioNomina f = new FormularioNomina("update", nomina, usuario);
-        f.setOnCloseCallback(() -> cargarNominasDesdeServidor());
+        f.setOnCloseCallback(this::cargarNominasDesdeServidor);
         f.mostrar();
+    }
+
+    // ======================================================
+    // ================= DUPLICAR NOMINA ====================
+    // ======================================================
+
+    private void duplicarNomina(Nomina nomina) {
+
+        new Thread(() -> {
+            try {
+                var con = Cliente.getConexion();
+
+                con.enviar("INSERT_NOMINA"
+                        + Cliente.SEP + usuario.getId()
+                        + Cliente.SEP + nomina.getImporte()
+                        + Cliente.SEP + nomina.getConcepto()
+                        + Cliente.SEP + nomina.getTipo()
+                );
+
+                // refrescar tabla
+                Platform.runLater(this::cargarNominasDesdeServidor);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 }

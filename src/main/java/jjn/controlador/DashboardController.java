@@ -1,19 +1,15 @@
-package jjn;
-import javafx.scene.Node;
+package jjn.controlador;
+import jjn.Cliente;
+import jjn.ConexionCliente;
 import jjn.dashboardElements.EstadisticaDepartamentoDashboard;
-import jjn.dashboardElements.TareasDashboard;
-import jjn.dashboardElements.TareasUsuarioDashboard;
+import jjn.dashboardElements.AsignarTareasDashboard;
+import jjn.dashboardElements.TareasAsignadasDashboard;
 import jjn.dashboardElements.UsuariosDashboard;
-import jjn.modelos.Tarea;
 import jjn.modelos.*;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -22,7 +18,6 @@ import javafx.stage.Stage;
 import javafx.fxml.FXMLLoader;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.time.LocalDate;
 public class DashboardController {
     @FXML private BorderPane rootPane;
     @FXML private Label lblUsuarioYRol;
@@ -53,16 +48,16 @@ public class DashboardController {
         sidebar.getChildren().clear();
         sidebar.setPrefWidth(80);
         sidebar.setStyle("-fx-background-color: #111111; -fx-padding: 20 10; -fx-spacing: 15;");
-        if(!Main.getUsuarioActual().esAdmin()) {
+        if(!Cliente.getUsuarioActual().esAdmin()) {
             agregarBoton("tasks", "Tareas",  this::mostrarTareasUsuarioDashboard);
         }
-        if(Main.getUsuarioActual().esAdmin()) {
-            agregarBoton("chart-bar", "Reportes", this::estadisticaDepartamentoDashboard);
+        if(Cliente.getUsuarioActual().esAdmin()) {
+            agregarBoton("chart-bar", "Estadisticas", this::estadisticaDepartamentoDashboard);
         }
-
-        agregarBoton("paper-plane", "Asignar", this::mostrarTareasAsignadas);
-
-        if (usuario.esAdmin()||Main.getUsuarioActual().getNombreDepartamento().equals("contabilidad") ||Main.getUsuarioActual().getNombreDepartamento().equals("Recursos Humanos")) {
+        if(usuario.esJefeOSuperior()) {
+            agregarBoton("paper-plane", "Asignar", this::mostrarTareasAsignadas);
+        }
+        if (usuario.esAdmin()|| Cliente.getUsuarioActual().getNombreDepartamento().equals("contabilidad") || Cliente.getUsuarioActual().getNombreDepartamento().equals("Recursos Humanos")) {
             agregarBoton("users-cog", "Usuarios", this::mostrarUsuarios);
         }
         agregarBoton("sign-out-alt", "Salir", this::cerrarSesion);
@@ -101,7 +96,7 @@ public class DashboardController {
     }
 
     private void cerrarSesion() {
-        Main.cerrarSesion();
+        Cliente.cerrarSesion();
         try {
             Stage stage = (Stage) rootPane.getScene().getWindow();
             stage.setScene(new Scene(FXMLLoader.load(getClass().getResource("/fxml/login.fxml"))));
@@ -114,7 +109,7 @@ public class DashboardController {
     }
     private void mostrarTareasAsignadas() {
         contentArea.setContent(null);
-        contentArea.setContent(new TareasDashboard(contentArea));
+        contentArea.setContent(new AsignarTareasDashboard(contentArea));
     }
     private void estadisticaDepartamentoDashboard() {
         contentArea.setContent(null);
@@ -122,7 +117,7 @@ public class DashboardController {
     }
     private void mostrarTareasUsuarioDashboard() {
         contentArea.setContent(null);
-        contentArea.setContent(new TareasUsuarioDashboard(contentArea));
+        contentArea.setContent(new TareasAsignadasDashboard(contentArea));
     }
     private void mostrarUsuarios() {
         contentArea.setContent(null);

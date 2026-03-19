@@ -7,7 +7,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import jjn.Main;
+import jjn.Cliente;
 import jjn.forms.FormularioReporte;
 import jjn.modelos.Reporte;
 import jjn.modelos.Tarea;
@@ -21,26 +21,24 @@ public class ReportesDashboard extends VBox {
     private final ObservableList<Reporte> reportes = FXCollections.observableArrayList();
     private TableView<Reporte> tabla;
     private final Tarea tarea;
-    private  boolean hideit;
+    private boolean hideit;
 
-    public ReportesDashboard(Tarea tarea,boolean hideit) {
-        hideit=hideit;
+    public ReportesDashboard(Tarea tarea, boolean hideit) {
+        this.hideit = hideit;
         this.tarea = tarea;
 
-        Label titulo = new Label("Reportes Fecha Limite: "+ tarea.getFechaFin());
+        Label titulo = new Label("Reportes Fecha Limite: " + tarea.getFechaFin());
         titulo.setStyle("-fx-font-size: 32px;");
+
         Button btnNuevoReporte = crearBotonNuevoReporte();
-        HBox barraSuperior;
-        System.out.println(Main.getUsuarioActual().getId()+"--"+tarea.getIdAsignado());
-        if(hideit) {
-            barraSuperior = new HBox(titulo);
-        }else{
-            barraSuperior = new HBox(titulo, btnNuevoReporte);
-        }
+
+        HBox barraSuperior = hideit
+                ? new HBox(titulo)
+                : new HBox(titulo, btnNuevoReporte);
+
         barraSuperior.setSpacing(20);
         barraSuperior.setAlignment(Pos.CENTER_RIGHT);
         barraSuperior.setStyle("-fx-padding: 10 15 10 15;");
-
         HBox.setHgrow(titulo, Priority.ALWAYS);
 
         tabla = crearTabla();
@@ -62,6 +60,7 @@ public class ReportesDashboard extends VBox {
         iconoPlus.setIconSize(24);
         btn.setGraphic(iconoPlus);
 
+        //  ESTILO ORIGINAL RESTAURADO
         String estiloBase = """
                 -fx-background-color: #0d1b2f;
                 -fx-text-fill: #00CCFF;
@@ -76,6 +75,7 @@ public class ReportesDashboard extends VBox {
                 """;
 
         String estiloHover = estiloBase.replace("#0d1b2f", "#152c52");
+
         btn.setStyle(estiloBase);
         btn.setCursor(javafx.scene.Cursor.HAND);
 
@@ -83,9 +83,17 @@ public class ReportesDashboard extends VBox {
         btn.setOnMouseExited(e -> btn.setStyle(estiloBase));
 
         btn.setOnAction(e -> {
-            FormularioReporte f = new FormularioReporte("insert", null, tarea);
-            f.setOnCloseCallback(this::cargarReportesDesdeServidor);
-            f.mostrar();
+            try {
+                FormularioReporte f = new FormularioReporte("insert", null, tarea);
+
+                f.mostrar();
+
+                //  refrescar después de cerrar
+                cargarReportesDesdeServidor();
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         });
 
         return btn;
@@ -95,7 +103,11 @@ public class ReportesDashboard extends VBox {
         TableView<Reporte> table = new TableView<>();
         table.setItems(reportes);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+
+        var css = getClass().getResource("/css/styles.css");
+        if (css != null) {
+            table.getStylesheets().add(css.toExternalForm());
+        }
 
         tableColumnFactory(table);
         return table;
@@ -105,47 +117,38 @@ public class ReportesDashboard extends VBox {
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-        TableColumn<Reporte, String> colFin = new TableColumn<>("Creacion");
-        colFin.setCellValueFactory(c ->
+        TableColumn<Reporte, String> colFecha = new TableColumn<>("Creación");
+        colFecha.setCellValueFactory(c ->
                 new javafx.beans.property.SimpleStringProperty(
-                        c.getValue().getFechacreacion().format(fmt)
-                )
-        );
+                        c.getValue().getFechacreacion().format(fmt)));
 
-        TableColumn<Reporte, String> colInfo = new TableColumn<>("Descripcion");
+        TableColumn<Reporte, String> colInfo = new TableColumn<>("Descripción");
         colInfo.setCellValueFactory(c ->
                 new javafx.beans.property.SimpleStringProperty(
-                        c.getValue().getInformacion() != null ?
-                                (c.getValue().getInformacion().length() > 20
-                                        ? c.getValue().getInformacion().substring(0, 20) + "..."
-                                        : c.getValue().getInformacion())
+                        c.getValue().getInformacion() != null
+                                ? (c.getValue().getInformacion().length() > 20
+                                ? c.getValue().getInformacion().substring(0, 20) + "..."
+                                : c.getValue().getInformacion())
                                 : ""
-                )
-        );
+                ));
 
         TableColumn<Reporte, String> colUsuario = new TableColumn<>("Usuario");
         colUsuario.setCellValueFactory(c ->
-                new javafx.beans.property.SimpleStringProperty(c.getValue().getNombreUsuario())
-        );
+                new javafx.beans.property.SimpleStringProperty(
+                        c.getValue().getNombreUsuario()));
 
         TableColumn<Reporte, String> colEstado = new TableColumn<>("Estado");
         colEstado.setCellValueFactory(c ->
-                new javafx.beans.property.SimpleStringProperty(c.getValue().getEstado())
-        );
+                new javafx.beans.property.SimpleStringProperty(
+                        c.getValue().getEstado()));
 
-        // Botón para EDITAR
-        TableColumn<Reporte, Void> colEditar = new TableColumn<>("");
-        colEditar.setPrefWidth(30);
-        colEditar.setCellFactory(tc -> crearBotonIcono("fas-edit", "#00CCFF",
-                this::editarReporte));
+        // 🔍 BOTÓN VER (LUPA)
+        TableColumn<Reporte, Void> colVer = new TableColumn<>("");
+        colVer.setPrefWidth(30);
+        colVer.setCellFactory(tc ->
+                crearBotonIcono("fas-search", "#FFD700", this::verReporte));
 
-        // Botón para CERRAR REPORTE
-        TableColumn<Reporte, Void> colCerrar = new TableColumn<>("");
-        colCerrar.setPrefWidth(30);
-        colCerrar.setCellFactory(tc -> crearBotonIcono("fas-check", "#22FF22",
-                this::cerrarReporte));
-
-        table.getColumns().addAll( colFin, colInfo, colUsuario, colEstado);
+        table.getColumns().addAll(colFecha, colInfo, colUsuario, colEstado, colVer);
     }
 
     private TableCell<Reporte, Void> crearBotonIcono(String icono, String color,
@@ -159,9 +162,13 @@ public class ReportesDashboard extends VBox {
                 fIcon.setIconColor(Color.web(color));
                 fIcon.setIconSize(22);
                 btn.setGraphic(fIcon);
+
+                //  ESTILO ORIGINAL
                 btn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-                btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: #FFFFFF11; -fx-background-radius: 8;"));
-                btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent;"));
+                btn.setOnMouseEntered(e ->
+                        btn.setStyle("-fx-background-color: #FFFFFF11; -fx-background-radius: 8;"));
+                btn.setOnMouseExited(e ->
+                        btn.setStyle("-fx-background-color: transparent;"));
             }
 
             @Override
@@ -169,7 +176,8 @@ public class ReportesDashboard extends VBox {
                 super.updateItem(item, empty);
                 if (empty) setGraphic(null);
                 else {
-                    btn.setOnAction(e -> accion.accept(getTableView().getItems().get(getIndex())));
+                    btn.setOnAction(e ->
+                            accion.accept(getTableView().getItems().get(getIndex())));
                     setGraphic(btn);
                     setAlignment(Pos.CENTER);
                 }
@@ -177,37 +185,39 @@ public class ReportesDashboard extends VBox {
         };
     }
 
+    private void verReporte(Reporte r) {
+        FormularioReporte f = new FormularioReporte("view", r, tarea);
+
+        f.mostrar();
+
+        // refrescar al volver
+        cargarReportesDesdeServidor();
+    }
+
     private void cargarReportesDesdeServidor() {
         new Thread(() -> {
             try {
-                var con = Main.getConexion();
-                con.enviar("REPORTES" + Main.SEP + tarea.getId());
+                var con = Cliente.getConexion();
+                con.enviar("REPORTES" + Cliente.SEP + tarea.getId());
 
                 String respuesta = con.leerRespuestaCompleta();
-                System.out.println(respuesta + "<-reporte");
-                Platform.runLater(() -> reportes.clear());
 
-                String[] lineas = respuesta.split(Main.JUMP);
-                for (String linea : lineas) {
+                Platform.runLater(reportes::clear);
+
+                for (String linea : respuesta.split(Cliente.JUMP)) {
                     if (linea.trim().isEmpty()) continue;
 
-                    String[] campos = linea.split(Main.SEP);
-                    try {
-                        Reporte r = new Reporte();
+                    String[] c = linea.split(Cliente.SEP);
 
-                        r.setId(Integer.parseInt(campos[0]));
-                        r.setFechacreacion(LocalDate.parse(campos[1]));
-                        r.setInformacion(campos[2]);
-                        r.setEstado(campos[3]);
-                        r.setIdUsuarioReporte(Integer.parseInt(campos[4]));
-                        r.setNombreUsuario(campos[5]);
+                    Reporte r = new Reporte();
+                    r.setId(Integer.parseInt(c[0]));
+                    r.setFechacreacion(LocalDate.parse(c[1]));
+                    r.setInformacion(c[2]);
+                    r.setEstado(c[3]);
+                    r.setIdUsuarioReporte(Integer.parseInt(c[4]));
+                    r.setNombreUsuario(c[5]);
 
-                        Platform.runLater(() -> reportes.add(r));
-
-                    } catch (Exception ex) {
-                        System.out.println("Error parseando reporte: " + linea);
-                        ex.printStackTrace();
-                    }
+                    Platform.runLater(() -> reportes.add(r));
                 }
 
             } catch (Exception e) {
@@ -215,33 +225,4 @@ public class ReportesDashboard extends VBox {
             }
         }).start();
     }
-
-    private void editarReporte(Reporte r) {
-        FormularioReporte f = new FormularioReporte("update", r, tarea);
-        f.setOnCloseCallback(this::cargarReportesDesdeServidor);
-        f.mostrar();
-    }
-
-    private void cerrarReporte(Reporte r) {
-
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                "¿Deseas cerrar este reporte?", ButtonType.YES, ButtonType.NO);
-
-        if (alert.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) return;
-
-        new Thread(() -> {
-            try {
-                var con = Main.getConexion();
-                con.enviar("CERRAR_REPORTE" + Main.SEP + r.getId());
-
-                con.leerRespuestaCompleta(); // no se usa, pero limpia buffer
-
-                Platform.runLater(this::cargarReportesDesdeServidor);
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }).start();
-    }
-
 }

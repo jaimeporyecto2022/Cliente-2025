@@ -3,6 +3,8 @@ package jjn.dashboardElements;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -10,7 +12,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import jjn.Main;
+import jjn.Cliente;
 import jjn.forms.FormularioTarea;
 import jjn.modelos.Tarea;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -18,25 +20,64 @@ import org.kordamp.ikonli.javafx.FontIcon;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-public class TareasUsuarioDashboard extends VBox {
+public class AsignarTareasDashboard extends VBox {
+
     private final ObservableList<Tarea> tareas = FXCollections.observableArrayList();
+    private FilteredList<Tarea> tareasFiltradas;
     private TableView<Tarea> tabla;
+
     @FXML
     private ScrollPane contentArea;
 
+    public AsignarTareasDashboard(ScrollPane contentArea) {
+        this.contentArea = contentArea;
 
-    public TareasUsuarioDashboard(ScrollPane contentArea) {
-        this.contentArea=contentArea;
-        Label titulo = new Label("Tareas: "+Main.getUsuarioActual().getNombre());
+        Label titulo = new Label("Asignar Tareas");
         titulo.setStyle("-fx-font-size: 32px;");
-        HBox barraSuperior = new HBox(titulo);
+
+        // 🔍 BUSCADOR
+        TextField buscador = new TextField();
+        buscador.setPromptText("Buscar tarea...");
+        buscador.setPrefWidth(250);
+        buscador.setStyle("""
+                -fx-background-color: #1E1E1E;
+                -fx-text-fill: white;
+                -fx-prompt-text-fill: #666666;
+                -fx-background-radius: 10;
+                -fx-padding: 8 12;
+                """);
+
+        // FILTRO
+        tareasFiltradas = new FilteredList<>(tareas, p -> true);
+
+        buscador.textProperty().addListener((obs, oldVal, newVal) -> {
+            tareasFiltradas.setPredicate(t -> {
+                if (newVal == null || newVal.isEmpty()) return true;
+
+                String filtro = newVal.toLowerCase();
+
+                return (t.getTitulo() != null && t.getTitulo().toLowerCase().contains(filtro))
+                        || (t.getNombreAsignado() != null && t.getNombreAsignado().toLowerCase().contains(filtro));
+            });
+        });
+
+        Button btnNuevaTarea = crearBotonNuevaTarea();
+
+        //  BARRA SUPERIOR
+        HBox barraSuperior = new HBox(titulo, buscador, btnNuevaTarea);
         barraSuperior.setSpacing(20);
         barraSuperior.setAlignment(Pos.CENTER_RIGHT);
         barraSuperior.setStyle("-fx-padding: 10 15 10 15;");
 
-        HBox.setHgrow(titulo, Priority.ALWAYS); // empuja el botón a la derecha
+        HBox.setHgrow(titulo, Priority.ALWAYS);
 
         tabla = crearTabla();
+
+        //  aplicar filtro + orden
+        SortedList<Tarea> sortedData = new SortedList<>(tareasFiltradas);
+        sortedData.comparatorProperty().bind(tabla.comparatorProperty());
+        tabla.setItems(sortedData);
+
         cargarTareasDesdeServidor();
 
         ScrollPane scroll = new ScrollPane(tabla);
@@ -47,8 +88,6 @@ public class TareasUsuarioDashboard extends VBox {
         getChildren().addAll(barraSuperior, scroll);
     }
 
-
-
     private Button crearBotonNuevaTarea() {
         Button btn = new Button(" Tarea");
 
@@ -57,7 +96,6 @@ public class TareasUsuarioDashboard extends VBox {
         iconoPlus.setIconSize(24);
         btn.setGraphic(iconoPlus);
 
-        // Estilo base
         String estiloBase = """
         -fx-background-color: #0d1b2f;
         -fx-text-fill: #00CCFF;
@@ -76,24 +114,21 @@ public class TareasUsuarioDashboard extends VBox {
         btn.setStyle(estiloBase);
         btn.setCursor(javafx.scene.Cursor.HAND);
 
-        // Hover suave
         btn.setOnMouseEntered(e -> btn.setStyle(estiloHover));
         btn.setOnMouseExited(e -> btn.setStyle(estiloBase));
 
-        // Acción
         btn.setOnAction(e -> {
             FormularioTarea f = new FormularioTarea("insert", null);
-            f.setOnCloseCallback(() -> cargarTareasDesdeServidor()); // 🔥 refrescar
+            f.setOnCloseCallback(this::cargarTareasDesdeServidor);
             f.mostrar();
         });
 
         return btn;
     }
+
     private TableView<Tarea> crearTabla() {
         TableView<Tarea> table = new TableView<>();
-        table.setItems(tareas);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
         table.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
 
         tableColumnFactory(table);
@@ -112,19 +147,19 @@ public class TareasUsuarioDashboard extends VBox {
                         default -> "#222222";
                     };
 
+                    setStyle("-fx-background-color: " + colorFondo + ";");
                 }
             }
         });
-
 
         return table;
     }
 
     private void tableColumnFactory(TableView<Tarea> table) {
-        // CABECERAS DORADAS
+
         TableColumn<Tarea, String> colTitulo = new TableColumn<>("Título");
         colTitulo.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getTitulo()));
-        colTitulo.setPrefWidth(120);
+
         TableColumn<Tarea, String> colAsignado = new TableColumn<>("Asignado a");
         colAsignado.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getNombreAsignado()));
 
@@ -133,14 +168,13 @@ public class TareasUsuarioDashboard extends VBox {
             Tarea t = c.getValue();
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yy");
             StringBuilder sb = new StringBuilder();
-            if (t.getFechaCreacion() != null) sb.append("Creacion: ").append(t.getFechaCreacion().format(fmt));
-            if (t.getFechaInicio() != null) sb.append("\nfrom ").append(t.getFechaInicio().format(fmt));
-            if (t.getFechaFin() != null) sb.append("- to ").append(t.getFechaFin().format(fmt)+"");
+            if (t.getFechaCreacion() != null) sb.append("Creación: ").append(t.getFechaCreacion().format(fmt));
+            if (t.getFechaInicio() != null) sb.append("\nDesde ").append(t.getFechaInicio().format(fmt));
+            if (t.getFechaFin() != null) sb.append(" - Hasta ").append(t.getFechaFin().format(fmt));
             return new javafx.beans.property.SimpleStringProperty(sb.toString());
         });
 
         TableColumn<Tarea, String> colEstado = new TableColumn<>("Estado");
-        colEstado.setPrefWidth(50);
         colEstado.setCellValueFactory(c -> new javafx.beans.property.SimpleStringProperty(c.getValue().getEstado()));
         colEstado.setCellFactory(tc -> new TableCell<>() {
             @Override
@@ -148,39 +182,40 @@ public class TareasUsuarioDashboard extends VBox {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
-                    setGraphic(null);
                 } else {
                     setText(item.toUpperCase());
                     setFont(Font.font("System", FontWeight.BOLD, 13));
                     setTextFill(switch (item.toLowerCase()) {
                         case "completado" -> Color.web("#00FF88");
                         case "pendiente" -> Color.web("#FFD700");
-                        case "no puedo hacerlo", "imposible" -> Color.web("#FF4444");
+                        case "imposible", "no puedo hacerlo" -> Color.web("#FF4444");
                         default -> Color.GRAY;
                     });
-                    setStyle("-fx-background-color: #00000066; -fx-background-radius: 6px; -fx-padding: 6 16;");
                 }
             }
         });
-        // BOTÓN REPORTE
+
+        TableColumn<Tarea, Void> colVer = new TableColumn<>("");
+        colVer.setPrefWidth(30);
+        colVer.setCellFactory(tc -> crearBotonIcono("fas-search", "#FFD700", this::mostrarEditarTarea));
+
         TableColumn<Tarea, Void> colReporte = new TableColumn<>("");
         colReporte.setPrefWidth(30);
         colReporte.setCellFactory(tc -> crearBotonIcono("fas-file-alt", "#00CCFF", this::mostrarReporteTarea));
 
-        table.getColumns().addAll(colTitulo, colAsignado, colFechas, colEstado, colReporte);
+        table.getColumns().addAll(colTitulo, colAsignado, colFechas, colEstado, colVer, colReporte);
     }
 
     private TableCell<Tarea, Void> crearBotonIcono(String icono, String color, java.util.function.Consumer<Tarea> accion) {
         return new TableCell<>() {
             private final Button btn = new Button();
+
             {
                 FontIcon icon = new FontIcon(icono);
                 icon.setIconColor(Color.web(color));
                 icon.setIconSize(22);
                 btn.setGraphic(icon);
                 btn.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
-                btn.setOnMouseEntered(e -> btn.setStyle("-fx-background-color: #FFFFFF11; -fx-background-radius: 8;"));
-                btn.setOnMouseExited(e -> btn.setStyle("-fx-background-color: transparent;"));
             }
 
             @Override
@@ -197,37 +232,43 @@ public class TareasUsuarioDashboard extends VBox {
         };
     }
 
-    // TU CARGA ORIGINAL RESPETADA AL 100%
     private void cargarTareasDesdeServidor() {
-
         new Thread(() -> {
             try {
-                var conexion = Main.getConexion();
-                conexion.enviar("MIS_TAREAS" + Main.SEP + Main.getUsuarioActual().getId());
+                var conexion = Cliente.getConexion();
+                int idCreador = Cliente.getUsuarioActual().getId();
+
+                conexion.enviar("MIS_TAREAS_CREADAS" + Cliente.SEP + idCreador);
 
                 String respuesta = conexion.leerRespuestaCompleta();
                 Platform.runLater(() -> tareas.clear());
 
-                String[] lineas = respuesta.split(Main.JUMP, -1);
+                String[] lineas = respuesta.split(Cliente.JUMP, -1);
 
                 for (String linea : lineas) {
+                    if (linea.trim().isEmpty()) continue;
 
-                    if (linea.trim().isEmpty() || linea.equals("FIN_COMANDO"))
-                        continue;
+                    String[] campos = linea.split(Cliente.SEP, -1);
 
-                    String[] c = linea.split(Main.SEP, -1);
-                    if (c.length < 6) continue;
+                    try {
+                        Tarea t = new Tarea(
+                                Integer.parseInt(campos[0]),
+                                campos[1],
+                                campos[2],
+                                "null".equals(campos[3]) ? null : LocalDate.parse(campos[3]),
+                                "null".equals(campos[4]) ? null : LocalDate.parse(campos[4]),
+                                "null".equals(campos[5]) ? null : LocalDate.parse(campos[5]),
+                                campos[6],
+                                campos[7],
+                                campos[8],
+                                Integer.parseInt(campos[9])
+                        );
 
-                    Tarea t = new Tarea();
-                    t.setId(Integer.parseInt(c[0]));
-                    t.setTitulo(c[1]);
-                    t.setDescripcion(c[2]);
-                    t.setFechaInicio("Sin fecha".equals(c[2]) ? null : LocalDate.parse(c[3]));
-                    t.setFechaFin("Sin fecha".equals(c[3]) ? null : LocalDate.parse(c[4]));
-                    t.setEstado(c[5]);
-                    t.setNombreAsignado(c[6]);
+                        Platform.runLater(() -> tareas.add(t));
 
-                    Platform.runLater(() -> tareas.add(t));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
 
             } catch (Exception e) {
@@ -236,10 +277,13 @@ public class TareasUsuarioDashboard extends VBox {
         }).start();
     }
 
-
+    private void mostrarEditarTarea(Tarea tarea) {
+        FormularioTarea f = new FormularioTarea("update", tarea);
+        f.setOnCloseCallback(this::cargarTareasDesdeServidor);
+        f.mostrar();
+    }
 
     private void mostrarReporteTarea(Tarea tarea) {
-        contentArea.setContent(null);
-        contentArea.setContent(new ReportesDashboard(tarea,false));
+        contentArea.setContent(new ReportesDashboard(tarea, true));
     }
 }

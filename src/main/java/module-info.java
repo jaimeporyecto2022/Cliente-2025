@@ -16,4 +16,6 @@ module jjn.proyecto_cliente {
 
     opens jjn to javafx.fxml;
     exports jjn;
+    exports jjn.controlador;
+    opens jjn.controlador to javafx.fxml;
 }

@@ -1,5 +1,7 @@
-package jjn;
+package jjn.controlador;
 
+import jjn.Cliente;
+import jjn.ConexionCliente;
 import jjn.modelos.Usuario;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -9,12 +11,12 @@ import javafx.scene.control.*;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.time.LocalDate;
 
 public class LoginController {
 
     @FXML private TextField tfUsuario;
     @FXML private PasswordField pfPassword;
+    @FXML private TextField tfIP;
     @FXML private Label lblMensaje;
 
     private ConexionCliente conexion;
@@ -22,12 +24,14 @@ public class LoginController {
     @FXML
     private void initialize() {
         lblMensaje.setText("");
+        tfIP.setText("192.168.0.12");
     }
 
     @FXML
     private void handleLogin() {
         String identificador = tfUsuario.getText().trim();
         String password = pfPassword.getText();
+        Cliente.ip=tfIP.getText();
 
         if (identificador.isEmpty() || password.isEmpty()) {
             mostrarError("Completa todos los campos");
@@ -39,8 +43,9 @@ public class LoginController {
 
         new Thread(() -> {
             try {
-                conexion = new ConexionCliente("localhost", 5000);
-                conexion.enviar("LOGIN"+ Main.SEP + identificador + Main.SEP + password);
+                conexion = new ConexionCliente(Cliente.ip, 5000);
+                //conexion = new ConexionCliente("localhost", 5000);
+                conexion.enviar("LOGIN"+ Cliente.SEP + identificador + Cliente.SEP + password);
 
                 String respuesta = conexion.leerRespuestaCompleta();
 
@@ -70,7 +75,7 @@ public class LoginController {
     private void crearUsuarioYEntrar(String respuesta) {
         try {
             System.out.println(respuesta);
-            String[] datos = respuesta.split(Main.SEP);
+            String[] datos = respuesta.split(Cliente.SEP);
             Usuario usuario = new Usuario(
                     Integer.parseInt(datos[1]),                                       // id
                     datos[2],                                                         // nombre
@@ -84,9 +89,9 @@ public class LoginController {
                 usuario.setFechaAlta(LocalDate.parse(datos[7]));
             }*/
 
-            // Guardamos en Main (accesible desde cualquier parte del cliente)
-            Main.setUsuarioActual(usuario);
-            Main.setConexion(conexion);
+            // Guardamos en Cliente (accesible desde cualquier parte del cliente)
+            Cliente.setUsuarioActual(usuario);
+            Cliente.setConexion(conexion);
 
             // Abrimos el Dashboard
             Stage stage = (Stage) tfUsuario.getScene().getWindow();  // ← este sí existe

@@ -3,16 +3,13 @@ import com.lowagie.text.*;
 import com.lowagie.text.Font;
 import com.lowagie.text.pdf.*;
 import javafx.stage.FileChooser;
-import org.kordamp.ikonli.javafx.FontIcon;
+import jjn.Cliente;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import jjn.Main;
 import jjn.modelos.EstadisticaDepartamento;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -157,23 +154,23 @@ public class EstadisticaDepartamentoDashboard extends VBox {
 
         new Thread(() -> {
             try {
-                var conexion = Main.getConexion();
+                var conexion = Cliente.getConexion();
 
                 // Enviar comando al servidor
                 conexion.enviar(
-                        "ESTADISTICAS_DEPARTAMENTO" + Main.SEP +
-                                fechaInicio + Main.SEP +
+                        "ESTADISTICAS_DEPARTAMENTO" + Cliente.SEP +
+                                fechaInicio + Cliente.SEP +
                                 fechaFin
                 );
                 String respuesta = conexion.leerRespuestaCompleta();
                 System.out.println("linea "+respuesta);
                 Platform.runLater(() -> estadisticas.clear());
 
-                String[] lineas = respuesta.split(Main.JUMP, -1);
+                String[] lineas = respuesta.split(Cliente.JUMP, -1);
 
                 for (String linea : lineas) {
                     if (linea == null || linea.trim().isEmpty()) continue;
-                    String[] campos = linea.split(Main.SEP, -1);
+                    String[] campos = linea.split(Cliente.SEP, -1);
                     if (campos.length < 5) continue;
 
                     try {
@@ -224,14 +221,14 @@ public class EstadisticaDepartamentoDashboard extends VBox {
 
             document.open();
 
-            // 📄 Título
+            //  Título
             Font tituloFont = new Font(Font.HELVETICA, 18, Font.BOLD);
             Paragraph titulo = new Paragraph("Estadísticas por Departamento", tituloFont);
             titulo.setAlignment(Element.ALIGN_CENTER);
             titulo.setSpacingAfter(20);
             document.add(titulo);
 
-            // 📅 Fechas
+            //  Fechas
             Font fechaFont = new Font(Font.HELVETICA, 18, Font.BOLD);
             Paragraph fechas = new Paragraph(
                     "Periodo: " + dpInicio.getValue() + "  →  " + dpFin.getValue(),
@@ -241,7 +238,7 @@ public class EstadisticaDepartamentoDashboard extends VBox {
             fechas.setSpacingAfter(15);
             document.add(fechas);
 
-            // 📊 Tabla
+            //  Tabla
             PdfPTable table = new PdfPTable(5);
             table.setWidthPercentage(100);
             table.setSpacingBefore(10);

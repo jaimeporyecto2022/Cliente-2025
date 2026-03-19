@@ -1,6 +1,8 @@
 package jjn.forms;
 
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -8,32 +10,35 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import jjn.ConexionCliente;
-import jjn.Main;
+import jjn.Cliente;
 import jjn.modelos.Tarea;
 import jjn.modelos.Usuario;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
 public class FormularioTarea {
 
     private final Stage stage;
     private final boolean esUpdate;
     private final Tarea tareaOriginal;
 
-    // UI
     private TextField txtTitulo;
     private TextArea txtDescripcion;
     private ComboBox<Usuario> cbUsuarios;
+    private ObservableList<Usuario> usuariosOriginales;
+
     private DatePicker dpInicio;
     private DatePicker dpFin;
     private ComboBox<String> cbEstado;
-    private Runnable onCloseCallback;   // 🔥 NUEVO
+    private Runnable onCloseCallback;
 
-    public void setOnCloseCallback(Runnable callback) {  // 🔥 NUEVO
+    public void setOnCloseCallback(Runnable callback) {
         this.onCloseCallback = callback;
     }
+
     public FormularioTarea(String accion, Tarea tarea) {
 
         this.esUpdate = accion.equalsIgnoreCase("update");
@@ -56,25 +61,59 @@ public class FormularioTarea {
         txtDescripcion.setPrefRowCount(4);
         txtDescripcion.setWrapText(true);
 
+        // ===== COMBO BUSCABLE =====
         cbUsuarios = new ComboBox<>();
-        cbUsuarios.setPromptText("Asignar a...");
+        cbUsuarios.setPromptText("Buscar usuario...");
+        cbUsuarios.setEditable(true);
+
+        // Mostrar nombre
+        cbUsuarios.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(Usuario item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : item.getNombre());
+            }
+        });
+
+        cbUsuarios.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Usuario item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : item.getNombre());
+            }
+        });
+
+        // Estilo editor
+        Platform.runLater(() -> {
+            TextField editor = cbUsuarios.getEditor();
+            editor.getStyleClass().add("combo-editor");
+        });
+
+        // ===== FILTRO =====
+        cbUsuarios.getEditor().textProperty().addListener((obs, oldVal, newVal) -> {
+            if (usuariosOriginales == null) return;
+
+            String filtro = newVal.toLowerCase();
+
+            List<Usuario> filtrados = usuariosOriginales.stream()
+                    .filter(u -> u.getNombre().toLowerCase().contains(filtro))
+                    .collect(Collectors.toList());
+
+            cbUsuarios.getItems().setAll(filtrados);
+            cbUsuarios.show();
+        });
 
         dpInicio = new DatePicker();
-        dpInicio.setPromptText("Fecha inicio");
-
         dpFin = new DatePicker();
-        dpFin.setPromptText("Fecha fin");
 
         cbEstado = new ComboBox<>();
         cbEstado.getItems().addAll("pendiente", "completado", "imposible");
-        cbEstado.setPromptText("Estado");
 
-
-        // === CARGAR USUARIOS CON NUEVO MÉTODO SIMPLE ===
+        // Cargar usuarios
         cargarUsuariosEnSegundoPlano();
 
         // ===== BOTONES =====
-        Button btnGuardar = new Button("Guardar");
+        Button btnGuardar = new Button(esUpdate ? "Guardar" : "Crear");
         btnGuardar.setOnAction(e -> guardar());
 
         Button btnCancelar = new Button("Cancelar");
@@ -92,6 +131,7 @@ public class FormularioTarea {
                 new Label("Fecha fin:"), dpFin,
                 botones
         );
+
         root.getStylesheets().add(
                 getClass().getResource("/css/formEstilo.css").toExternalForm()
         );
@@ -101,7 +141,7 @@ public class FormularioTarea {
         }
 
         stage.setScene(new Scene(root, 600, 700));
-        // 🔥 IMPORTANTE: ejecutar callback al cerrar
+
         stage.setOnHidden(e -> {
             if (onCloseCallback != null) onCloseCallback.run();
         });
@@ -120,28 +160,27 @@ public class FormularioTarea {
     }
 
     // ============================================================
-    // ========== CARGAR USUARIOS DESDE SERVIDOR ===================
+    // CARGAR USUARIOS
     // ============================================================
     private void cargarUsuariosEnSegundoPlano() {
         new Thread(() -> {
             try {
-                var con = Main.getConexion();
-                var user = Main.getUsuarioActual();
+                var con = Cliente.getConexion();
+                var user = Cliente.getUsuarioActual();
 
-                // === NUEVO USO DEL MÉTODO SIMPLE ===
                 if (user.getRol().equalsIgnoreCase("admin")) {
-                    con.enviar("USUARIOS_SIMPLE");System.out.println("entra en simple");
+                    con.enviar("USUARIOS_SIMPLE");
                 } else {
-                    con.enviar("USUARIOS_DEP_SIMPLE" + Main.SEP + user.getIdDepartamento());
+                    con.enviar("EMPLEADOS_DEPARTAMENTOS_SIMPLE" + Cliente.SEP + user.getIdDepartamento());
                 }
 
                 String resp = con.leerRespuestaCompleta();
-                System.out.println("respuestas"+ resp);
 
                 List<Usuario> lista = parseUsuarios(resp);
 
                 Platform.runLater(() -> {
-                    cbUsuarios.getItems().setAll(lista);
+                    usuariosOriginales = FXCollections.observableArrayList(lista);
+                    cbUsuarios.setItems(usuariosOriginales);
 
                     if (esUpdate) {
                         for (Usuario u : lista) {
@@ -160,31 +199,26 @@ public class FormularioTarea {
     }
 
     // ============================================================
-    // ========== PARSEAR RESPUESTA DE USUARIOS ====================
+    // PARSEAR USUARIOS
     // ============================================================
     private List<Usuario> parseUsuarios(String respuesta) {
         List<Usuario> lista = new ArrayList<>();
 
-        if (respuesta == null || respuesta.isEmpty()) {
-            System.out.println("⚠ No llegaron usuarios");
-            return lista;
-        }
+        if (respuesta == null || respuesta.isEmpty()) return lista;
 
-        String[] filas = respuesta.split(Main.JUMP);
+        String[] filas = respuesta.split(Cliente.JUMP);
 
         for (String f : filas) {
             if (f.trim().isEmpty()) continue;
 
-            String[] c = f.split(Main.SEP);
+            String[] c = f.split(Cliente.SEP);
 
             if (c.length >= 2) {
                 try {
                     Usuario u = new Usuario();
                     u.setId(Integer.parseInt(c[0]));
                     u.setNombre(c[1]);
-
                     lista.add(u);
-
                 } catch (Exception ignored) {}
             }
         }
@@ -193,49 +227,60 @@ public class FormularioTarea {
     }
 
     // ============================================================
-    // ====================== GUARDAR ==============================
+    // GUARDAR (FIX IMPORTANTE AQUÍ)
     // ============================================================
     private void guardar() {
+
         String titulo = txtTitulo.getText().trim();
         String desc = txtDescripcion.getText().trim();
-        Usuario usuario = cbUsuarios.getValue();
+
+        Object valor = cbUsuarios.getValue();
+        Usuario usuario = null;
+
+        if (valor instanceof Usuario u) {
+            usuario = u;
+        } else if (valor instanceof String texto) {
+            usuario = usuariosOriginales.stream()
+                    .filter(u -> u.getNombre().equalsIgnoreCase(texto))
+                    .findFirst()
+                    .orElse(null);
+        }
+
         LocalDate inicio = dpInicio.getValue();
         LocalDate fin = dpFin.getValue();
         String estado = cbEstado.getValue();
-
 
         if (titulo.isEmpty() || usuario == null || estado == null) {
             new Alert(Alert.AlertType.WARNING, "Completa los campos obligatorios").show();
             return;
         }
 
-        jjn.ConexionCliente con = Main.getConexion();
-        Usuario creador = Main.getUsuarioActual();
+        var con = Cliente.getConexion();
+        Usuario creador = Cliente.getUsuarioActual();
 
         if (esUpdate) {
             con.enviar("UPDATE_TAREA"
-                    + Main.SEP + this.tareaOriginal.getId()
-                    + Main.SEP + creador.getId()
-                    + Main.SEP + usuario.getId()
-                    + Main.SEP + desc
-                    + Main.SEP + inicio
-                    + Main.SEP + fin
-                    + Main.SEP + estado
-                    + Main.SEP + titulo
+                    + Cliente.SEP + tareaOriginal.getId()
+                    + Cliente.SEP + creador.getId()
+                    + Cliente.SEP + usuario.getId()
+                    + Cliente.SEP + desc
+                    + Cliente.SEP + inicio
+                    + Cliente.SEP + fin
+                    + Cliente.SEP + estado
+                    + Cliente.SEP + titulo
             );
         } else {
             con.enviar("INSERT_TAREA"
-                    + Main.SEP + creador.getId()
-                    + Main.SEP + usuario.getId()
-                    + Main.SEP + desc
-                    + Main.SEP + inicio
-                    + Main.SEP + fin
-                    + Main.SEP + estado
-                    + Main.SEP + titulo
+                    + Cliente.SEP + creador.getId()
+                    + Cliente.SEP + usuario.getId()
+                    + Cliente.SEP + desc
+                    + Cliente.SEP + inicio
+                    + Cliente.SEP + fin
+                    + Cliente.SEP + estado
+                    + Cliente.SEP + titulo
             );
         }
 
         stage.close();
     }
-
 }
